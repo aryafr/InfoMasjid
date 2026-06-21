@@ -606,7 +606,7 @@ export default function MasjidDisplay() {
       <header className="relative z-10 flex items-center justify-between border-b-2 border-border/60 pb-6 mb-6 shrink-0">
         <div className="flex items-center gap-6">
           <div className="h-28 w-28 flex items-center justify-center shrink-0 drop-shadow-xl">
-            <Image src="/logo.png" alt="Logo InfoMasjid" width={112} height={112} className="w-full h-full object-contain" />
+            <Image src="/icon.png" alt="Logo InfoMasjid" width={112} height={112} className="w-full h-full object-contain" />
           </div>
           <div>
             <h1 className="text-5xl font-black tracking-tight text-foreground drop-shadow-sm">

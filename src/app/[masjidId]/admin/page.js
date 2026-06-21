@@ -397,7 +397,7 @@ export default function AdminPage() {
         <div className="w-full max-w-md bg-card/20 backdrop-blur-3xl border border-border/60 shadow-xl shadow-emerald-500/30 rounded-3xl p-10 shadow-lg">
           <div className="text-center mb-8">
             <div className="h-20 w-20 flex items-center justify-center mx-auto mb-4 shrink-0">
-              <Image src="/logo.png" alt="Logo InfoMasjid" width={80} height={80} className="w-full h-full object-contain" />
+              <Image src="/icon.png" alt="Logo InfoMasjid" width={80} height={80} className="w-full h-full object-contain" />
             </div>
             <h2 className="text-2xl font-bold text-card-foreground tracking-tight">InfoMasjid Admin Portal</h2>
             <p className="text-muted-foreground text-sm mt-2">Masuk untuk mengelola data Masjid</p>
@@ -473,7 +473,7 @@ export default function AdminPage() {
         <div className="p-6">
           <div className="flex items-center gap-3 mb-10 pl-2">
             <div className="h-14 w-14 flex items-center justify-center shrink-0">
-              <Image src="/logo.png" alt="Logo" width={56} height={56} className="w-full h-full object-contain" />
+              <Image src="/icon.png" alt="Logo" width={56} height={56} className="w-full h-full object-contain" />
             </div>
             <h2 className="font-bold text-lg text-sidebar-foreground leading-tight tracking-tight">InfoMasjid</h2>
           </div>
