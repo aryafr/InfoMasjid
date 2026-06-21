@@ -17,6 +17,66 @@ import {
 } from "lucide-react";
 import ThemeToggle from "@/components/ThemeToggle";
 
+const MockTVSlider = () => {
+  const [slideIdx, setSlideIdx] = useState(0);
+  const slides = [
+    { title: "Selamat Datang di InfoMasjid", desc: "Sistem Manajemen Digital Modern untuk Masjid Anda." },
+    { title: "Kajian Rutin Ba'da Maghrib", desc: "Bersama Ustadz Abdul Somad. Tema: Fiqih Ibadah." },
+    { title: "Laporan Keuangan Bulan Ini", desc: "Saldo Kas Masjid: Rp 15.450.000" }
+  ];
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setSlideIdx(prev => (prev + 1) % slides.length);
+    }, 4000);
+    return () => clearInterval(timer);
+  }, [slides.length]);
+
+  return (
+    <div className="w-full h-full bg-zinc-900 text-white flex flex-col relative overflow-hidden font-sans">
+      {/* Header */}
+      <div className="flex justify-between items-center px-12 py-8 bg-zinc-950/80 shadow-md border-b border-white/10">
+         <div className="flex items-center gap-6">
+           <div className="w-20 h-20 bg-white/10 rounded-2xl flex items-center justify-center p-3 shrink-0">
+             <img src="/icon.png" className="w-full h-full object-contain" alt="logo" />
+           </div>
+           <div>
+             <h1 className="text-4xl font-black tracking-tight text-white">Masjid Da'watul Islam</h1>
+             <p className="text-xl text-zinc-400 font-medium mt-1">Balikpapan, Indonesia</p>
+           </div>
+         </div>
+         <div className="flex gap-10 items-center">
+           <div className="text-right">
+             <p className="text-xl font-bold tracking-widest text-emerald-500 mb-1">DZUHUR</p>
+             <p className="text-4xl font-black text-white">12:15</p>
+           </div>
+           <div className="h-16 w-1 bg-white/20"></div>
+           <div className="text-right">
+             <p className="text-6xl font-black text-white">10:45</p>
+           </div>
+         </div>
+      </div>
+      
+      {/* Body / Slider */}
+      <div className="flex-1 flex items-center justify-center p-12 relative overflow-hidden bg-gradient-to-br from-emerald-900/40 to-zinc-900">
+        <div className="absolute inset-0 flex items-center justify-center transition-all duration-700 ease-in-out transform">
+           <div key={slideIdx} className="text-center p-16 bg-white/5 backdrop-blur-xl rounded-[3rem] border border-white/10 shadow-2xl max-w-5xl w-full mx-12 animate-fade-in">
+             <h2 className="text-6xl font-black text-white mb-8 leading-tight">{slides[slideIdx].title}</h2>
+             <p className="text-4xl text-emerald-400 font-medium leading-relaxed">{slides[slideIdx].desc}</p>
+           </div>
+        </div>
+      </div>
+
+      {/* Footer */}
+      <div className="bg-emerald-950 text-emerald-400 py-6 overflow-hidden flex items-center border-t border-emerald-900/50">
+        <div className="text-3xl font-semibold tracking-wide px-12 truncate w-full">
+          PENGUMUMAN: Harap menonaktifkan telepon genggam selama khutbah berlangsung... Kajian rutin dilaksanakan setiap hari Ahad...
+        </div>
+      </div>
+    </div>
+  )
+}
+
 export default function LandingPage() {
   const containerRef = useRef(null);
   const [scale, setScale] = useState(1);
@@ -122,12 +182,7 @@ export default function LandingPage() {
                     flexShrink: 0
                   }}
                 >
-                  <iframe 
-                    src="/demo-masjid" 
-                    className="w-full h-full border-none pointer-events-none"
-                    title="Live Demo Preview"
-                    tabIndex={-1}
-                  />
+                  <MockTVSlider />
                 </div>
               </div>
 
