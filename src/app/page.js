@@ -273,11 +273,11 @@ export default function LandingPage() {
               </div>
               <ul className="flex flex-col gap-4 mb-10 flex-1">
                 {[
-                  "1 Layar TV Utama (Landscape)",
+                  "Tampilan Layar TV Pintar",
                   "Jadwal Sholat Otomatis",
+                  "Teks Berjalan (Running Text)",
                   "Dasbor Admin Web",
-                  "Hosting & Database Gratis",
-                  "Watermark Kecil Sponsor"
+                  "Tanpa Biaya Server Tambahan"
                 ].map((item, i) => (
                   <li key={i} className="flex items-center gap-3">
                     <CheckCircle className="h-5 w-5 text-primary shrink-0" />
@@ -313,10 +313,10 @@ export default function LandingPage() {
               <ul className="flex flex-col gap-4 mb-10 flex-1">
                 {[
                   "Semua fitur Paket Berkah",
-                  "Multi-Layar (TV Utama, TV Luar)",
-                  "Custom Logo & Warna Tema",
-                  "Prioritas Support WhatsApp",
-                  "Bebas Watermark Sponsor"
+                  "Slide Gambar & Pengumuman",
+                  "Modul Laporan Keuangan",
+                  "Custom Logo Masjid",
+                  "Prioritas Support WhatsApp"
                 ].map((item, i) => (
                   <li key={i} className="flex items-center gap-3">
                     <CheckCircle className="h-5 w-5 text-primary shrink-0" />
