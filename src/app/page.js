@@ -214,11 +214,12 @@ export default function LandingPage() {
               </div>
               <ul className="flex flex-col gap-4 mb-10 flex-1">
                 {[
-                  "Tampilan Jadwal Sholat",
+                  "Tampilan Jadwal Sholat Pintar",
                   "Teks Pengumuman Berjalan",
-                  "Dasbor Admin Web",
-                  "Tema Gelap & Terang",
-                  "Mode Layar Penuh (TV)"
+                  "Informasi Khotib Jumat",
+                  "Dasbor Admin Web Terpusat",
+                  "Sinkronisasi Cloud Real-time",
+                  "Tema Gelap & Terang"
                 ].map((item, i) => (
                   <li key={i} className="flex items-center gap-3">
                     <CheckCircle className="h-5 w-5 text-primary shrink-0" />
@@ -254,10 +255,11 @@ export default function LandingPage() {
               <ul className="flex flex-col gap-4 mb-10 flex-1">
                 {[
                   "Semua fitur Paket Berkah",
-                  "Upload Slide Gambar",
+                  "Upload Slide Gambar/Poster",
                   "Tabel Laporan Keuangan",
-                  "Custom Logo Masjid",
-                  "Sinkronisasi Waktu Nyata"
+                  "Tampilan QRIS Donasi Digital",
+                  "Hitung Mundur Hari Raya",
+                  "Custom Logo & Identitas Masjid"
                 ].map((item, i) => (
                   <li key={i} className="flex items-center gap-3">
                     <CheckCircle className="h-5 w-5 text-primary shrink-0" />
