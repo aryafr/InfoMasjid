@@ -17,10 +17,12 @@ import {
 } from "lucide-react";
 import ThemeToggle from "@/components/ThemeToggle";
 import StaticTVPreview from "@/components/StaticTVPreview";
+import { useRouter } from "next/navigation";
 
 export default function LandingPage() {
   const containerRef = useRef(null);
   const [scale, setScale] = useState(1);
+  const router = useRouter();
 
   useEffect(() => {
     if (!containerRef.current) return;
@@ -228,7 +230,7 @@ export default function LandingPage() {
                 ))}
               </ul>
               <button 
-                onClick={() => alert("Sistem Payment Gateway Midtrans akan segera diintegrasikan disini.")}
+                onClick={() => router.push("/checkout?pkg=berkah")}
                 className="w-full py-4 rounded-full bg-card/50 border border-border/80 font-bold hover:bg-card transition-colors text-foreground flex items-center justify-center gap-2 group cursor-pointer"
               >
                 Langganan Sekarang
@@ -268,7 +270,7 @@ export default function LandingPage() {
                 ))}
               </ul>
               <button 
-                onClick={() => alert("Sistem Payment Gateway Midtrans akan segera diintegrasikan disini.")}
+                onClick={() => router.push("/checkout?pkg=premium")}
                 className="w-full py-4 rounded-full bg-primary text-primary-foreground font-bold hover:opacity-90 transition-colors shadow-xl shadow-primary/30 flex items-center justify-center gap-2 group cursor-pointer"
               >
                 Langganan via Midtrans

@@ -304,9 +304,9 @@ export default function AdminPage() {
     if (!settings) return;
     setSyncLoading(true);
     try {
-      const city = settings.auto_update.city || "Balikpapan";
-      const country = settings.auto_update.country || "Indonesia";
-      const method = settings.auto_update.method || 11;
+      const city = settingsForm.auto_update.city || settings.auto_update?.city || "Balikpapan";
+      const country = settingsForm.auto_update.country || settings.auto_update?.country || "Indonesia";
+      const method = settingsForm.auto_update.method || settings.auto_update?.method || 11;
       
       const res = await fetch(
         `https://api.aladhan.com/v1/timingsByCity?city=${city}&country=${country}&method=${method}`
@@ -957,14 +957,29 @@ export default function AdminPage() {
               <div className="bg-card/20 backdrop-blur-3xl border border-border/60 shadow-xl shadow-emerald-500/30 rounded-3xl p-10 shadow-sm hover:shadow-md transition-shadow max-w-3xl mx-auto w-full">
                 <div className="flex justify-between items-center mb-6 border-b border-border pb-4">
                   <h2 className="text-lg font-bold text-foreground">Jadwal Sholat Fardhu</h2>
-                  <button 
-                    onClick={handleForceSync}
-                    disabled={syncLoading}
-                    className="bg-primary/10 text-primary font-semibold px-4 py-2.5 rounded-xl flex items-center gap-2 hover:bg-primary/20 transition-colors disabled:opacity-50 text-sm border border-primary/20 cursor-pointer"
-                  >
-                    <RefreshCw className={`h-4 w-4 ${syncLoading ? "animate-spin" : ""}`} />
-                    <span>{syncLoading ? "Mengambil Data..." : "Sync API Otomatis"}</span>
-                  </button>
+                  <div className="flex items-center gap-3">
+                    <div className="relative">
+                      <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                      <input 
+                        type="text" 
+                        placeholder="Cari Kota..."
+                        value={settingsForm.auto_update?.city || ""}
+                        onChange={(e) => setSettingsForm({
+                          ...settingsForm, 
+                          auto_update: { ...settingsForm.auto_update, city: e.target.value }
+                        })}
+                        className="w-48 bg-input/50 border border-border rounded-xl pl-9 pr-4 py-2 text-sm focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary text-foreground"
+                      />
+                    </div>
+                    <button 
+                      onClick={handleForceSync}
+                      disabled={syncLoading}
+                      className="bg-primary/10 text-primary font-semibold px-4 py-2.5 rounded-xl flex items-center gap-2 hover:bg-primary/20 transition-colors disabled:opacity-50 text-sm border border-primary/20 cursor-pointer"
+                    >
+                      <RefreshCw className={`h-4 w-4 ${syncLoading ? "animate-spin" : ""}`} />
+                      <span>{syncLoading ? "Mencari..." : "Sync API Otomatis"}</span>
+                    </button>
+                  </div>
                 </div>
 
                 <form onSubmit={handleJadwalSubmit} className="flex flex-col gap-6">
