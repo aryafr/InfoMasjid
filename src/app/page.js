@@ -47,7 +47,7 @@ export default function LandingPage() {
         <div className="container mx-auto px-6 h-20 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="h-12 w-12 flex items-center justify-center shrink-0">
-              <Image src="/Logo.png" alt="Logo" width={48} height={48} className="w-full h-full object-contain" />
+              <Image src="/icon.png" alt="Logo" width={48} height={48} className="w-full h-full object-contain" />
             </div>
             <span className="font-bold text-xl tracking-tight">InfoMasjid</span>
           </div>
@@ -287,7 +287,7 @@ export default function LandingPage() {
         <div className="container mx-auto px-6 py-12 flex flex-col md:flex-row items-center justify-between gap-6">
           <div className="flex items-center gap-3">
             <div className="h-10 w-10 flex items-center justify-center shrink-0">
-              <Image src="/Logo.png" alt="Logo" width={40} height={40} className="w-full h-full object-contain" />
+              <Image src="/icon.png" alt="Logo" width={40} height={40} className="w-full h-full object-contain" />
             </div>
             <span className="font-bold text-lg tracking-tight">InfoMasjid</span>
           </div>
