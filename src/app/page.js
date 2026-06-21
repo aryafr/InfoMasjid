@@ -13,7 +13,9 @@ import {
   ShieldCheck,
   ChevronRight,
   Play,
-  Wallet
+  Wallet,
+  Camera,
+  MessageCircle
 } from "lucide-react";
 import ThemeToggle from "@/components/ThemeToggle";
 import StaticTVPreview from "@/components/StaticTVPreview";
@@ -47,24 +49,28 @@ export default function LandingPage() {
 
       {/* Navigation Bar */}
       <nav className="fixed top-0 left-0 right-0 z-50 border-b border-border/40 bg-background/60 backdrop-blur-xl">
-        <div className="container mx-auto px-6 h-20 flex items-center justify-between">
+        <div className="container mx-auto px-6 h-20 flex items-center justify-between relative">
           <div className="flex items-center gap-3">
             <div className="h-12 w-12 flex items-center justify-center shrink-0">
               <Image src="/icon.png" alt="Logo" width={48} height={48} className="w-full h-full object-contain" />
             </div>
             <span className="font-bold text-xl tracking-tight">InfoMasjid</span>
           </div>
-          <div className="flex items-center gap-6">
-            <div className="hidden md:flex gap-6 text-sm font-medium text-muted-foreground">
-              <a href="#fitur" className="hover:text-foreground transition-colors">Fitur</a>
-              <a href="#harga" className="hover:text-foreground transition-colors">Harga</a>
-            </div>
-            <div className="flex items-center gap-4">
-              <ThemeToggle />
-              <Link href="/demo-masjid/admin" className="hidden md:flex items-center justify-center px-5 py-2.5 text-sm font-bold bg-muted hover:bg-muted/80 text-foreground rounded-full transition-all">
-                Login Admin
-              </Link>
-            </div>
+
+          <div className="hidden md:flex absolute left-1/2 -translate-x-1/2 gap-8 text-sm font-semibold text-muted-foreground">
+            <a href="#fitur" className="hover:text-foreground transition-colors">Fitur</a>
+            <a href="#harga" className="hover:text-foreground transition-colors">Harga</a>
+          </div>
+
+          <div className="flex items-center gap-4">
+            <ThemeToggle />
+            <Link href="/login" className="hidden md:flex text-sm font-bold hover:text-primary transition-colors">Masuk</Link>
+            <button 
+              onClick={() => router.push("/checkout?pkg=berkah")}
+              className="bg-primary text-primary-foreground font-bold px-5 py-2.5 rounded-full text-sm hover:bg-primary/90 transition-all shadow-lg hover:shadow-xl hover:-translate-y-0.5"
+            >
+              Daftar Sekarang
+            </button>
           </div>
         </div>
       </nav>
@@ -291,17 +297,20 @@ export default function LandingPage() {
             </div>
             <span className="font-bold text-lg tracking-tight">InfoMasjid</span>
           </div>
-          <p className="text-muted-foreground text-sm font-medium">
-            © {new Date().getFullYear()} InfoMasjid. Karya Anak Bangsa.
-          </p>
+          <div className="flex flex-col md:flex-row items-center gap-4 text-sm text-muted-foreground font-medium">
+            <p>© {new Date().getFullYear()} InfoMasjid. Karya Anak Bangsa.</p>
+            <div className="flex items-center gap-4">
+              <Link href="/terms" className="hover:text-primary transition-colors">Syarat & Ketentuan</Link>
+              <Link href="/privacy" className="hover:text-primary transition-colors">Kebijakan Privasi</Link>
+            </div>
+          </div>
           <div className="flex gap-4">
-            {/* Social icons placeholders */}
-            <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center text-muted-foreground hover:text-primary transition-colors cursor-pointer">
-              IG
-            </div>
-            <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center text-muted-foreground hover:text-primary transition-colors cursor-pointer">
-              WA
-            </div>
+            <a href="https://instagram.com" target="_blank" rel="noopener noreferrer" className="w-10 h-10 rounded-full bg-muted flex items-center justify-center text-muted-foreground hover:text-primary transition-colors cursor-pointer">
+              <Camera className="w-5 h-5" />
+            </a>
+            <a href="https://wa.me/6282220788248" target="_blank" rel="noopener noreferrer" className="w-10 h-10 rounded-full bg-muted flex items-center justify-center text-muted-foreground hover:text-primary transition-colors cursor-pointer">
+              <MessageCircle className="w-5 h-5" />
+            </a>
           </div>
         </div>
       </footer>

@@ -5,11 +5,28 @@ export async function POST(req) {
   try {
     const { order_id, gross_amount, customer_details, masjidId } = await req.json();
 
-    // Initialize Midtrans Snap API client
+    // 1. Validate Input
+    if (!order_id || !gross_amount || !customer_details?.email || !masjidId) {
+      return NextResponse.json({ message: "Invalid request. Missing required fields." }, { status: 400 });
+    }
+
+    // 2. Validate Price (Server-side Enforcement)
+    const validPrices = [250000, 550000];
+    if (!validPrices.includes(Number(gross_amount))) {
+      return NextResponse.json({ message: "Invalid payment amount. Possible manipulation detected." }, { status: 400 });
+    }
+
+    // 3. Format Validation
+    if (!order_id.startsWith("ORDER-")) {
+      return NextResponse.json({ message: "Invalid order ID format." }, { status: 400 });
+    }
+
+    const serverKey = process.env.MIDTRANS_SERVER_KEY || "";
+
+    // Toggle for Production
     let snap = new midtransClient.Snap({
-      // We use Sandbox for testing. In production, change this to false.
-      isProduction: false, 
-      serverKey: process.env.MIDTRANS_SERVER_KEY,
+      isProduction: true, 
+      serverKey: serverKey,
     });
 
     let parameter = {

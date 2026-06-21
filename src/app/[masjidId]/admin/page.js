@@ -28,7 +28,13 @@ import {
   BookOpen,
   PlayCircle,
   UploadCloud,
-  Loader2
+  Loader2,
+  Info,
+  ShieldCheck,
+  Mail,
+  Lock,
+  ArrowRight,
+  Copy
 } from "lucide-react";
 import ThemeToggle from "@/components/ThemeToggle";
 import { 
@@ -40,6 +46,7 @@ import {
   subscribeToQris, 
   subscribeToIdulFitri, 
   subscribeToIdulAdha,
+  subscribeToMasjidRoot,
   updateSettings,
   updateJadwal,
   updateSholatJumat,
@@ -51,9 +58,11 @@ import {
   updateIdulFitri,
   updateIdulAdha
 } from "@/lib/firestoreService";
-import { auth, isMockFirebase } from "@/lib/firebase";
+import { auth, db, isMockFirebase } from "@/lib/firebase";
 import { signInWithEmailAndPassword, signOut, onAuthStateChanged } from "firebase/auth";
+import { doc, getDoc } from "firebase/firestore";
 import Image from "next/image";
+import Link from "next/link";
 import { Image as ImageIcon } from "lucide-react";
 
 const compressImageToBase64 = (file, maxWidth = 1280, quality = 0.6) => {
@@ -111,8 +120,16 @@ export default function AdminPage() {
   // Tab State
   const [activeTab, setActiveTab] = useState("settings");
   const [uploadingPosterIndex, setUploadingPosterIndex] = useState(null);
+  const [uploadingLogo, setUploadingLogo] = useState(false);
   const [actionStatus, setActionStatus] = useState({ success: null, message: "" });
   const [syncLoading, setSyncLoading] = useState(false);
+  const [tvUrl, setTvUrl] = useState("");
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      setTvUrl(`${window.location.origin}/${masjidId}`);
+    }
+  }, [masjidId]);
 
   // Custom Modal State
   const [modalConfig, setModalConfig] = useState({ isOpen: false, title: "", message: "", type: "alert", onConfirm: null });
@@ -130,6 +147,7 @@ export default function AdminPage() {
   };
 
   // Form States
+  const [masjidRoot, setMasjidRoot] = useState(null);
   const [settingsForm, setSettingsForm] = useState({
     nama_aplikasi: "",
     running_text: "",
@@ -149,7 +167,7 @@ export default function AdminPage() {
     imam: "", khatib: "", muadzin: "", tanggal: ""
   });
   const [qrisForm, setQrisForm] = useState({
-    atas_nama: "", bank: "", nomor_rekening: "", keterangan: "", status: "aktif", gambar: "/qris_example.png"
+    atas_nama: "", bank: "", nomor_rekening: "", keterangan: "", status: "aktif", gambar: ""
   });
   const [fitriForm, setFitriForm] = useState({
     tahun: "", tanggal: "", imam: "", khatib: "", muadzin: "", waktu: "", keterangan: ""
@@ -166,7 +184,7 @@ export default function AdminPage() {
 
   // 1. Auth Listener
   useEffect(() => {
-    if (isMockFirebase) {
+    if (isMockFirebase || masjidId === 'demo-masjid') {
       const isMockLoggedIn = localStorage.getItem(`mock_admin_logged_in_${masjidId}`);
       if (isMockLoggedIn === "true") {
         setIsLoggedIn(true);
@@ -177,15 +195,48 @@ export default function AdminPage() {
       return;
     }
 
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      if (user) {
-        setIsLoggedIn(true);
-      } else {
-        setIsLoggedIn(false);
+    // Verify Masjid exists before showing login
+    const checkMasjid = async () => {
+      try {
+        const masjidRef = doc(db, "masjids", masjidId);
+        const masjidSnap = await getDoc(masjidRef);
+        
+        if (!masjidSnap.exists() && masjidId !== "demo-masjid") {
+           // Provide a subtle way to exit or redirect, but better to redirect to 404
+           window.location.href = "/not-found"; 
+           return;
+        }
+
+        const unsubscribe = onAuthStateChanged(auth, async (user) => {
+          if (user) {
+            if (user.email === process.env.NEXT_PUBLIC_SUPER_ADMIN_EMAIL) {
+              window.location.href = "/superadmin";
+              return;
+            }
+            
+            // Ownership Verification
+            if (masjidSnap.exists() && masjidSnap.data().ownerUid === user.uid) {
+              setIsLoggedIn(true);
+            } else {
+              await signOut(auth);
+              window.location.href = "/login?error=akses-ditolak";
+            }
+          } else {
+            window.location.href = "/login";
+          }
+          setAuthLoading(false);
+        });
+        return unsubscribe;
+      } catch (error) {
+        console.error(error);
+        setAuthLoading(false);
       }
-      setAuthLoading(false);
-    });
-    return () => unsubscribe();
+    };
+    
+    let unsubPromise = checkMasjid();
+    return () => {
+      unsubPromise.then(unsub => { if (typeof unsub === 'function') unsub() });
+    };
   }, [masjidId]);
 
   // 2. Load Firestore subscriptions when logged in
@@ -218,6 +269,7 @@ export default function AdminPage() {
       setIdulAdha(data);
       if (data) setAdhaForm(data);
     });
+    const unsubRoot = subscribeToMasjidRoot(masjidId, setMasjidRoot);
 
     return () => {
       unsubSettings();
@@ -228,8 +280,9 @@ export default function AdminPage() {
       unsubQris();
       unsubFitri();
       unsubAdha();
+      unsubRoot();
     };
-  }, [isLoggedIn]);
+  }, [isLoggedIn, masjidId]);
 
   // Set alert timeouts
   useEffect(() => {
@@ -241,34 +294,13 @@ export default function AdminPage() {
     }
   }, [actionStatus]);
 
-  // Login handler
-  const handleLogin = async (e) => {
-    e.preventDefault();
-    setAuthError("");
-    
-    // Developer Demo Login Bypass
-    if (isMockFirebase || (email === "adminsholeh@admin.com" && password === "password")) {
-      localStorage.setItem(`mock_admin_logged_in_${masjidId}`, "true");
-      setIsLoggedIn(true);
-      setAuthLoading(false);
-      return;
-    }
-
-    try {
-      await signInWithEmailAndPassword(auth, email, password);
-      setIsLoggedIn(true);
-    } catch (err) {
-      console.error(err);
-      setAuthError("Email atau Password salah, atau Firebase belum terhubung.");
-    }
-  };
-
   // Logout handler
   const handleLogout = async () => {
     showConfirm("Konfirmasi Logout", "Apakah Anda yakin ingin keluar dari Admin Panel?", async () => {
-      if (isMockFirebase) {
+      if (isMockFirebase || masjidId === 'demo-masjid') {
         localStorage.removeItem(`mock_admin_logged_in_${masjidId}`);
         setIsLoggedIn(false);
+        window.location.href = "/login";
         return;
       }
       try {
@@ -277,6 +309,7 @@ export default function AdminPage() {
         console.warn("Firebase Auth Logout failed, executing local logout:", e);
       }
       setIsLoggedIn(false);
+      window.location.href = "/login";
     });
   };
 
@@ -393,56 +426,9 @@ export default function AdminPage() {
   // -------------------------------------------------------------
   if (!isLoggedIn) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-background p-6 font-sans">
-        <div className="w-full max-w-md bg-card/20 backdrop-blur-3xl border border-border/60 shadow-xl shadow-emerald-500/30 rounded-3xl p-10 shadow-lg">
-          <div className="text-center mb-8">
-            <div className="h-20 w-20 flex items-center justify-center mx-auto mb-4 shrink-0">
-              <Image src="/icon.png" alt="Logo InfoMasjid" width={80} height={80} className="w-full h-full object-contain" />
-            </div>
-            <h2 className="text-2xl font-bold text-card-foreground tracking-tight">InfoMasjid Admin Portal</h2>
-            <p className="text-muted-foreground text-sm mt-2">Masuk untuk mengelola data Masjid</p>
-          </div>
-
-          <form onSubmit={handleLogin} className="flex flex-col gap-5">
-            <div>
-              <label className="text-xs text-muted-foreground font-semibold mb-1.5 block">Alamat Email</label>
-              <input 
-                type="email" 
-                required
-                placeholder="admin@masjid.com" 
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="w-full bg-input/50 border border-border rounded-xl px-4 py-3 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary text-foreground transition-shadow"
-              />
-            </div>
-            
-            <div>
-              <label className="text-xs text-muted-foreground font-semibold mb-1.5 block">Kata Sandi</label>
-              <input 
-                type="password" 
-                required
-                placeholder="••••••••" 
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="w-full bg-input/50 border border-border rounded-xl px-4 py-3 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary text-foreground transition-shadow"
-              />
-            </div>
-
-            {authError && (
-              <div className="bg-destructive/10 border border-destructive/20 text-destructive p-3 rounded-xl text-xs flex items-center gap-2">
-                <AlertTriangle className="h-4 w-4 shrink-0" />
-                <span>{authError}</span>
-              </div>
-            )}
-
-            <button 
-              type="submit" 
-              className="bg-primary text-primary-foreground font-medium py-3 rounded-xl shadow hover:opacity-90 transition-opacity mt-2 cursor-pointer"
-            >
-              Log in
-            </button>
-          </form>
-        </div>
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+        <span className="ml-3 text-muted-foreground font-medium">Mengalihkan ke halaman login...</span>
       </div>
     );
   }
@@ -464,6 +450,57 @@ export default function AdminPage() {
     { id: "qris", name: "QRIS Donasi", icon: QrCode },
     { id: "panduan", name: "Buku Panduan", icon: BookOpen },
   ];
+
+  const isPremium = masjidRoot?.subscription_package === 'premium' || masjidId === 'demo-masjid';
+
+  const renderPremiumLockOverlay = () => {
+    if (isPremium) return null;
+    return (
+      <div className="absolute inset-0 z-50 bg-background/60 backdrop-blur-sm flex flex-col items-center justify-center p-8 text-center rounded-3xl">
+        <div className="w-20 h-20 bg-primary/10 rounded-full flex items-center justify-center mb-6 shadow-inner border border-primary/20">
+          <Lock className="w-10 h-10 text-primary" />
+        </div>
+        <h2 className="text-3xl font-black tracking-tight text-foreground mb-4">Fitur Eksklusif Paket Premium</h2>
+        <p className="text-muted-foreground max-w-lg mb-8 leading-relaxed">
+          Fitur ini terkunci karena Anda saat ini berlangganan <strong>Paket Berkah</strong>. 
+          Tingkatkan langganan Anda ke <strong>Paket Premium</strong> untuk membuka seluruh fitur unggulan InfoMasjid.
+        </p>
+        <a 
+          href="https://wa.me/6282220788248?text=Halo%20Admin%20InfoMasjid,%20saya%20ingin%20upgrade%20ke%20Paket%20Premium."
+          target="_blank"
+          rel="noopener noreferrer"
+          className="bg-primary text-primary-foreground font-bold px-8 py-4 rounded-xl shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all flex items-center gap-2"
+        >
+          Upgrade Sekarang <ArrowRight className="w-5 h-5" />
+        </a>
+      </div>
+    );
+  };
+
+  const isPendingPayment = masjidRoot?.payment_status === 'pending' && masjidId !== 'demo-masjid';
+
+  const renderPendingPaymentOverlay = () => {
+    if (!isPendingPayment) return null;
+    return (
+      <div className="absolute inset-0 z-[100] bg-background/80 backdrop-blur-md flex flex-col items-center justify-center p-8 text-center">
+        <div className="w-24 h-24 bg-orange-500/10 rounded-full flex items-center justify-center mb-6 shadow-inner border border-orange-500/20">
+          <Clock className="w-12 h-12 text-orange-500" />
+        </div>
+        <h2 className="text-3xl font-black tracking-tight text-foreground mb-4">Menunggu Pembayaran</h2>
+        <p className="text-muted-foreground max-w-lg mb-8 leading-relaxed">
+          Akun Anda saat ini berstatus <strong>Pending</strong>. Harap selesaikan pembayaran untuk mengaktifkan Dasbor Admin secara penuh. Hubungi Admin (WhatsApp) jika Anda membutuhkan bantuan atau ingin melakukan aktivasi manual.
+        </p>
+        <a 
+          href={`https://wa.me/6282220788248?text=Halo%20Admin%20InfoMasjid,%20saya%20butuh%20bantuan%20terkait%20pembayaran%20akun%20saya%20(${masjidId}).`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="bg-emerald-600 text-white font-bold px-8 py-4 rounded-xl shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all flex items-center gap-2"
+        >
+          Hubungi Admin (WhatsApp) <ArrowRight className="w-5 h-5" />
+        </a>
+      </div>
+    );
+  };
 
   return (
     <div className="flex h-screen bg-background text-foreground font-sans overflow-hidden">
@@ -516,6 +553,7 @@ export default function AdminPage() {
 
       {/* MAIN CONTENT WRAPPER */}
       <div className="flex-1 flex flex-col h-screen overflow-hidden relative">
+        {renderPendingPaymentOverlay()}
         
         {/* Premium Luxury Background Glows (Mesh Gradient Effect) */}
         <div className="absolute top-[-20%] left-[-10%] w-[50%] h-[50%] bg-primary/30 rounded-[100%] blur-[160px] pointer-events-none z-0 animate-pulse-soft mix-blend-multiply dark:mix-blend-screen"></div>
@@ -653,6 +691,35 @@ export default function AdminPage() {
               <div className="bg-card/20 backdrop-blur-3xl border border-border/60 shadow-xl shadow-emerald-500/30 rounded-3xl p-10 shadow-sm">
                 <h2 className="text-lg font-bold text-foreground mb-6 border-b border-border pb-4">Pengaturan Global App</h2>
                 <form onSubmit={handleSettingsSubmit} className="flex flex-col gap-6">
+                  
+                  {/* TV LINK SECTION */}
+                  <div className="bg-primary/5 p-4 rounded-xl border border-primary/20">
+                    <label className="text-sm text-primary font-bold mb-2 block">Link Layar TV Anda</label>
+                    <div className="flex gap-3">
+                      <input 
+                        type="text" 
+                        value={tvUrl}
+                        readOnly
+                        className="flex-1 bg-background border border-primary/20 rounded-xl px-4 py-3 focus:outline-none text-foreground text-sm font-medium"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => {
+                          navigator.clipboard.writeText(tvUrl);
+                          setActionStatus({ success: true, message: "Link Layar TV berhasil disalin!" });
+                        }}
+                        className="bg-primary hover:bg-primary/90 text-primary-foreground p-3 rounded-xl transition-all shadow-md flex items-center justify-center gap-2 px-6 font-bold text-sm"
+                      >
+                        <Copy className="w-4 h-4" />
+                        Salin
+                      </button>
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-2 flex gap-1 items-center">
+                      <Info className="h-3.5 w-3.5 shrink-0" />
+                      Gunakan link ini pada Smart TV, Android TV, atau komputer yang tersambung ke layar masjid Anda.
+                    </p>
+                  </div>
+
                   <div>
                     <label className="text-sm text-foreground font-medium mb-2 block">Nama Aplikasi / Masjid</label>
                     <input 
@@ -661,6 +728,62 @@ export default function AdminPage() {
                       onChange={(e) => setSettingsForm({ ...settingsForm, nama_aplikasi: e.target.value })}
                       className="w-full bg-input/50 border border-border rounded-xl px-4 py-3 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary text-foreground transition-shadow"
                     />
+                  </div>
+
+                  <div>
+                    <label className="text-sm text-foreground font-medium mb-2 block">
+                      Custom Logo Masjid <span className="text-muted-foreground text-xs font-normal">(Opsional)</span>
+                    </label>
+                    <div className="flex gap-3">
+                      <input 
+                        type="text" 
+                        value={settingsForm.logo_url || ""}
+                        onChange={(e) => setSettingsForm({ ...settingsForm, logo_url: e.target.value })}
+                        placeholder="https://... atau klik Upload"
+                        className="flex-1 bg-input/50 border border-border rounded-xl px-4 py-3 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary text-foreground transition-shadow"
+                      />
+                      <label className={`p-3 rounded-xl transition-colors flex items-center justify-center border border-border ${
+                        uploadingLogo 
+                          ? "bg-primary/20 text-primary" 
+                          : "bg-primary/10 text-primary hover:bg-primary hover:text-white cursor-pointer"
+                      }`}>
+                        {uploadingLogo ? <Loader2 className="h-5 w-5 animate-spin"/> : <UploadCloud className="h-5 w-5"/>}
+                        <input 
+                          type="file" 
+                          accept="image/*" 
+                          className="hidden" 
+                          onChange={async (e) => {
+                            const file = e.target.files[0];
+                            if (!file) return;
+
+                            setUploadingLogo(true);
+                            try {
+                              if (isMockFirebase) {
+                                const reader = new FileReader();
+                                reader.onload = (event) => {
+                                  setSettingsForm({ ...settingsForm, logo_url: event.target.result });
+                                  setUploadingLogo(false);
+                                };
+                                reader.readAsDataURL(file);
+                                return;
+                              }
+
+                              const base64Url = await compressImageToBase64(file);
+                              setSettingsForm({ ...settingsForm, logo_url: base64Url });
+                            } catch (error) {
+                              console.error("Gagal kompresi logo:", error);
+                              showAlert("Gagal", "Gagal mengolah gambar logo.");
+                            } finally {
+                              setUploadingLogo(false);
+                            }
+                          }}
+                        />
+                      </label>
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-1.5 flex gap-1 items-center">
+                      <Info className="h-3.5 w-3.5 shrink-0" />
+                      Gunakan file gambar transparan (PNG). Jika kosong, logo default InfoMasjid akan digunakan.
+                    </p>
                   </div>
 
                   <div>
@@ -760,21 +883,56 @@ export default function AdminPage() {
                   <div>
                     <label className="text-sm text-foreground font-medium mb-3 block">Halaman yang Ditampilkan (Aktif)</label>
                     <div className="grid grid-cols-3 gap-4 bg-muted/30 p-5 rounded-2xl border border-border">
-                      {(settingsForm.rotation_pages || []).map((page, index) => (
-                        <label key={page.url} className="flex items-center gap-3 cursor-pointer select-none">
-                          <input 
-                            type="checkbox" 
-                            checked={page.active}
-                            onChange={(e) => {
-                              const updated = [...(settingsForm.rotation_pages || [])];
-                              updated[index].active = e.target.checked;
-                              setSettingsForm({ ...settingsForm, rotation_pages: updated });
-                            }}
-                            className="w-4 h-4 text-primary bg-card border-border rounded focus:ring-primary accent-primary"
-                          />
-                          <span className="text-sm font-medium text-foreground">{page.name}</span>
-                        </label>
-                      ))}
+                      {(() => {
+                        const masterList = [
+                          { url: "welcome", name: "Dashboard Lengkap", active: true },
+                          { url: "utama", name: "Jadwal Sholat", active: true },
+                          { url: "keuangan", name: "Rincian Keuangan", active: false },
+                          { url: "jumat", name: "Jadwal Sholat Jumat", active: true },
+                          { url: "pengumuman", name: "Pengumuman", active: false },
+                          { url: "keuangan-summary", name: "Ringkasan Keuangan", active: false },
+                          { url: "qris", name: "QRIS Donasi", active: false },
+                          { url: "idul-fitri", name: "Idul Fitri", active: false },
+                          { url: "idul-adha", name: "Idul Adha", active: false },
+                          { url: "hitung-mundur", name: "Hitung Mundur Hari Besar", active: false }
+                        ];
+
+                        const currentPages = settingsForm.rotation_pages || [];
+                        
+                        // Merge current pages into master list
+                        const mergedPages = masterList.map(masterPage => {
+                          const existing = currentPages.find(p => p.url === masterPage.url);
+                          if (existing) {
+                            return { ...masterPage, active: existing.active };
+                          }
+                          return masterPage;
+                        });
+
+                        return mergedPages.map((page, index) => {
+                          const isPremiumPage = ['keuangan', 'keuangan-summary', 'qris', 'idul-fitri', 'idul-adha'].includes(page.url);
+                          const isDisabled = !isPremium && isPremiumPage;
+                          
+                          return (
+                            <label key={page.url} className={`flex items-center gap-3 select-none ${isDisabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}>
+                              <input 
+                                type="checkbox" 
+                                checked={isDisabled ? false : page.active}
+                                disabled={isDisabled}
+                                onChange={(e) => {
+                                  const updated = [...mergedPages];
+                                  updated[index].active = e.target.checked;
+                                  setSettingsForm({ ...settingsForm, rotation_pages: updated });
+                                }}
+                                className="w-4 h-4 text-primary bg-card border-border rounded focus:ring-primary accent-primary disabled:opacity-50"
+                              />
+                              <span className="text-sm font-medium text-foreground">
+                                {page.name}
+                                {isDisabled && <Lock className="w-3 h-3 inline ml-1.5 text-amber-500 mb-0.5" />}
+                              </span>
+                            </label>
+                          );
+                        });
+                      })()}
                     </div>
                   </div>
 
@@ -850,11 +1008,14 @@ export default function AdminPage() {
                   {/* POSTER CAMPAIGN SECTION */}
                   <div className="bg-card border-2 border-border p-6 rounded-3xl">
                     <div className="flex items-center justify-between mb-4">
-                      <h3 className="text-xl font-bold flex items-center gap-2"><ImageIcon className="h-6 w-6 text-primary"/> Poster Campaign (Slide)</h3>
-                      <button type="button" onClick={() => {
+                      <h3 className="text-xl font-bold flex items-center gap-2">
+                        <ImageIcon className="h-6 w-6 text-primary"/> Poster Campaign (Slide)
+                        {!isPremium && <span className="ml-2 bg-amber-500/10 text-amber-500 px-2 py-0.5 rounded-md text-xs font-bold border border-amber-500/20"><Lock className="w-3 h-3 inline mr-1 -mt-0.5"/>Hanya Premium</span>}
+                      </h3>
+                      <button type="button" disabled={!isPremium} onClick={() => {
                         const newPosters = [...(settingsForm.posters || []), ""];
                         setSettingsForm({...settingsForm, posters: newPosters});
-                      }} className="bg-primary/10 text-primary px-3 py-1.5 rounded-lg text-sm font-bold flex items-center gap-1 hover:bg-primary/20 transition-colors">
+                      }} className="bg-primary/10 text-primary px-3 py-1.5 rounded-lg text-sm font-bold flex items-center gap-1 hover:bg-primary/20 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
                         <Plus className="h-4 w-4"/> Tambah Poster
                       </button>
                     </div>
@@ -870,6 +1031,7 @@ export default function AdminPage() {
                           <span className="font-bold text-foreground/30 w-6 text-right">{index+1}.</span>
                           <input 
                             type="url" 
+                            disabled={!isPremium}
                             placeholder="https://... atau klik Upload"
                             value={poster}
                             onChange={(e) => {
@@ -877,16 +1039,17 @@ export default function AdminPage() {
                               newPosters[index] = e.target.value;
                               setSettingsForm({...settingsForm, posters: newPosters});
                             }}
-                            className="flex-1 bg-input/50 border border-border rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-primary text-foreground"
+                            className="flex-1 bg-input/50 border border-border rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-primary text-foreground disabled:opacity-50 disabled:cursor-not-allowed"
                           />
-                          <label className={`p-3 rounded-xl cursor-pointer transition-colors flex items-center justify-center ${
+                          <label className={`p-3 rounded-xl transition-colors flex items-center justify-center ${
                             uploadingPosterIndex === index 
                               ? "bg-primary/20 text-primary" 
-                              : "bg-primary/10 text-primary hover:bg-primary hover:text-white"
-                          }`}>
+                              : "bg-primary/10 text-primary hover:bg-primary hover:text-white cursor-pointer"
+                          } ${!isPremium ? 'opacity-50 cursor-not-allowed pointer-events-none' : ''}`}>
                             {uploadingPosterIndex === index ? <Loader2 className="h-4 w-4 animate-spin"/> : <UploadCloud className="h-4 w-4"/>}
                             <input 
                               type="file" 
+                              disabled={!isPremium}
                               accept="image/*" 
                               className="hidden" 
                               onChange={async (e) => {
@@ -915,8 +1078,8 @@ export default function AdminPage() {
                                   newPosters[index] = base64Url;
                                   setSettingsForm({...settingsForm, posters: newPosters});
                                 } catch (error) {
-                                  console.error("Gagal kompresi:", error);
-                                  alert("Gagal mengolah gambar.");
+                                  console.error("Error compression:", error);
+                                  showAlert("Gagal", "Gagal mengolah gambar.");
                                 } finally {
                                   setUploadingPosterIndex(null);
                                 }
@@ -925,11 +1088,12 @@ export default function AdminPage() {
                           </label>
                           <button 
                             type="button" 
+                            disabled={!isPremium}
                             onClick={() => {
                               const newPosters = settingsForm.posters.filter((_, i) => i !== index);
                               setSettingsForm({...settingsForm, posters: newPosters});
                             }}
-                            className="p-3 bg-destructive/10 text-destructive rounded-xl hover:bg-destructive hover:text-white transition-colors"
+                            className="p-3 bg-destructive/10 text-destructive rounded-xl hover:bg-destructive hover:text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                           >
                             <Trash2 className="h-4 w-4"/>
                           </button>
@@ -1146,147 +1310,150 @@ export default function AdminPage() {
 
           {/* ==================== 5. TAB: KEUANGAN ==================== */}
           {activeTab === "keuangan" && (
-            <div className="animate-fade-in flex flex-col gap-8 max-w-6xl w-full mx-auto pb-20">
-              
-              <div className="bg-card/20 backdrop-blur-3xl border border-border/60 shadow-xl shadow-emerald-500/30 rounded-3xl p-6 shadow-sm">
-                <h3 className="text-base font-bold text-foreground mb-5 pb-3 border-b border-border">Catat Transaksi Baru</h3>
-                <form onSubmit={handleAddKeuangan} className="grid grid-cols-12 gap-5 items-end">
-                  <div className="col-span-2">
-                    <label className="text-xs text-muted-foreground font-medium mb-1.5 block">Tanggal</label>
-                    <input 
-                      type="date" 
-                      value={newKeuangan.tanggal}
-                      onChange={(e) => setNewKeuangan({ ...newKeuangan, tanggal: e.target.value })}
-                      className="w-full bg-input/50 border border-border rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary text-foreground"
-                    />
-                  </div>
+            <div className="relative">
+              {renderPremiumLockOverlay()}
+              <div className="animate-fade-in flex flex-col gap-8 max-w-6xl w-full mx-auto pb-20">
+                
+                <div className="bg-card/20 backdrop-blur-3xl border border-border/60 shadow-xl shadow-emerald-500/30 rounded-3xl p-6 shadow-sm">
+                  <h3 className="text-base font-bold text-foreground mb-5 pb-3 border-b border-border">Catat Transaksi Baru</h3>
+                  <form onSubmit={handleAddKeuangan} className="grid grid-cols-12 gap-5 items-end">
+                    <div className="col-span-2">
+                      <label className="text-xs text-muted-foreground font-medium mb-1.5 block">Tanggal</label>
+                      <input 
+                        type="date" 
+                        value={newKeuangan.tanggal}
+                        onChange={(e) => setNewKeuangan({ ...newKeuangan, tanggal: e.target.value })}
+                        className="w-full bg-input/50 border border-border rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary text-foreground"
+                      />
+                    </div>
 
-                  <div className="col-span-4">
-                    <label className="text-xs text-muted-foreground font-medium mb-1.5 block">Keterangan / Deskripsi</label>
-                    <input 
-                      type="text" 
-                      placeholder="Cth: Infak Jumat..."
-                      value={newKeuangan.deskripsi}
-                      onChange={(e) => setNewKeuangan({ ...newKeuangan, deskripsi: e.target.value })}
-                      className="w-full bg-input/50 border border-border rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary text-foreground"
-                    />
-                  </div>
+                    <div className="col-span-4">
+                      <label className="text-xs text-muted-foreground font-medium mb-1.5 block">Keterangan / Deskripsi</label>
+                      <input 
+                        type="text" 
+                        placeholder="Cth: Infak Jumat..."
+                        value={newKeuangan.deskripsi}
+                        onChange={(e) => setNewKeuangan({ ...newKeuangan, deskripsi: e.target.value })}
+                        className="w-full bg-input/50 border border-border rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary text-foreground"
+                      />
+                    </div>
 
-                  <div className="col-span-2">
-                    <label className="text-xs text-muted-foreground font-medium mb-1.5 block">Kategori</label>
-                    <select 
-                      value={newKeuangan.kategori}
-                      onChange={(e) => setNewKeuangan({ ...newKeuangan, kategori: e.target.value })}
-                      className="w-full bg-input/50 border border-border rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary text-foreground"
-                    >
-                      <option value="Infak">Infak</option>
-                      <option value="Donatur">Donatur</option>
-                      <option value="Operasional">Operasional</option>
-                      <option value="Utilitas">Utilitas</option>
-                    </select>
-                  </div>
+                    <div className="col-span-2">
+                      <label className="text-xs text-muted-foreground font-medium mb-1.5 block">Kategori</label>
+                      <select 
+                        value={newKeuangan.kategori}
+                        onChange={(e) => setNewKeuangan({ ...newKeuangan, kategori: e.target.value })}
+                        className="w-full bg-input/50 border border-border rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary text-foreground"
+                      >
+                        <option value="Infak">Infak</option>
+                        <option value="Donatur">Donatur</option>
+                        <option value="Operasional">Operasional</option>
+                        <option value="Utilitas">Utilitas</option>
+                      </select>
+                    </div>
 
-                  <div className="col-span-2">
-                    <label className="text-xs text-muted-foreground font-medium mb-1.5 block">Tipe</label>
-                    <select 
-                      onChange={(e) => {
-                        const isMasuk = e.target.value === "masuk";
-                        const val = newKeuangan.pemasukan || newKeuangan.pengeluaran;
-                        if (isMasuk) {
-                          setNewKeuangan({ ...newKeuangan, pemasukan: val, pengeluaran: 0 });
-                        } else {
-                          setNewKeuangan({ ...newKeuangan, pemasukan: 0, pengeluaran: val });
-                        }
-                      }}
-                      className="w-full bg-input/50 border border-border rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary text-foreground"
-                    >
-                      <option value="masuk">Masuk (+)</option>
-                      <option value="keluar">Keluar (-)</option>
-                    </select>
-                  </div>
+                    <div className="col-span-2">
+                      <label className="text-xs text-muted-foreground font-medium mb-1.5 block">Tipe</label>
+                      <select 
+                        onChange={(e) => {
+                          const isMasuk = e.target.value === "masuk";
+                          const val = newKeuangan.pemasukan || newKeuangan.pengeluaran;
+                          if (isMasuk) {
+                            setNewKeuangan({ ...newKeuangan, pemasukan: val, pengeluaran: 0 });
+                          } else {
+                            setNewKeuangan({ ...newKeuangan, pemasukan: 0, pengeluaran: val });
+                          }
+                        }}
+                        className="w-full bg-input/50 border border-border rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary text-foreground"
+                      >
+                        <option value="masuk">Masuk (+)</option>
+                        <option value="keluar">Keluar (-)</option>
+                      </select>
+                    </div>
 
-                  <div className="col-span-2">
-                    <label className="text-xs text-muted-foreground font-medium mb-1.5 block">Nominal (Rp)</label>
-                    <input 
-                      type="number" 
-                      placeholder="0"
-                      value={newKeuangan.pemasukan || newKeuangan.pengeluaran || ""}
-                      onChange={(e) => {
-                        const val = Number(e.target.value);
-                        if (newKeuangan.pemasukan > 0 || (!newKeuangan.pemasukan && !newKeuangan.pengeluaran)) {
-                          setNewKeuangan({ ...newKeuangan, pemasukan: val, pengeluaran: 0 });
-                        } else {
-                          setNewKeuangan({ ...newKeuangan, pemasukan: 0, pengeluaran: val });
-                        }
-                      }}
-                      className="w-full bg-input/50 border border-border rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary text-foreground"
-                    />
-                  </div>
-                  
-                  <div className="col-span-12 flex justify-end mt-2">
-                    <button type="submit" className="bg-primary text-primary-foreground text-sm font-medium px-8 py-3 rounded-xl shadow-sm hover:opacity-90 transition-colors cursor-pointer">
-                      Simpan Transaksi
-                    </button>
-                  </div>
-                </form>
-              </div>
-
-              {/* Ledger Table */}
-              <div className="bg-card/20 backdrop-blur-3xl border border-border/60 shadow-xl shadow-emerald-500/30 rounded-3xl p-6 shadow-sm">
-                <div className="flex justify-between items-center mb-5 pb-3 border-b border-border">
-                  <h3 className="text-base font-bold text-foreground">Buku Kas Rekapitulasi</h3>
+                    <div className="col-span-2">
+                      <label className="text-xs text-muted-foreground font-medium mb-1.5 block">Nominal (Rp)</label>
+                      <input 
+                        type="number" 
+                        placeholder="0"
+                        value={newKeuangan.pemasukan || newKeuangan.pengeluaran || ""}
+                        onChange={(e) => {
+                          const val = Number(e.target.value);
+                          if (newKeuangan.pemasukan > 0 || (!newKeuangan.pemasukan && !newKeuangan.pengeluaran)) {
+                            setNewKeuangan({ ...newKeuangan, pemasukan: val, pengeluaran: 0 });
+                          } else {
+                            setNewKeuangan({ ...newKeuangan, pemasukan: 0, pengeluaran: val });
+                          }
+                        }}
+                        className="w-full bg-input/50 border border-border rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary text-foreground"
+                      />
+                    </div>
+                    
+                    <div className="col-span-12 flex justify-end mt-2">
+                      <button type="submit" className="bg-primary text-primary-foreground text-sm font-medium px-8 py-3 rounded-xl shadow-sm hover:opacity-90 transition-colors cursor-pointer">
+                        Simpan Transaksi
+                      </button>
+                    </div>
+                  </form>
                 </div>
 
-                <div className="overflow-x-auto">
-                  <table className="w-full text-left border-collapse min-w-[800px]">
-                    <thead>
-                      <tr>
-                        <th className="py-3 px-4 text-xs font-semibold text-muted-foreground border-b border-border w-1/6">Tanggal</th>
-                        <th className="py-3 px-4 text-xs font-semibold text-muted-foreground border-b border-border w-2/6">Keterangan</th>
-                        <th className="py-3 px-4 text-xs font-semibold text-muted-foreground border-b border-border w-1/6">Kategori</th>
-                        <th className="py-3 px-4 text-xs font-semibold text-muted-foreground border-b border-border w-1/6">Nominal</th>
-                        <th className="py-3 px-4 text-xs font-semibold text-muted-foreground border-b border-border w-1/6">Status</th>
-                        <th className="py-3 px-4 border-b border-border w-12"></th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-border/50">
-                      {(keuangan || []).map((item, index) => {
-                        const isIncome = item.pemasukan > 0;
-                        return (
-                          <tr key={item.id} className={`hover:bg-muted/40 transition-colors ${index % 2 === 1 ? 'bg-muted/20' : 'bg-transparent'}`}>
-                            <td className="py-4 px-4 text-sm font-medium text-foreground">{item.tanggal}</td>
-                            <td className="py-4 px-4 text-sm text-foreground/80 font-medium">{item.deskripsi}</td>
-                            <td className="py-4 px-4 text-sm text-muted-foreground">{item.kategori}</td>
-                            <td className="py-4 px-4 text-sm font-mono font-bold text-foreground">
-                              Rp {Number(isIncome ? item.pemasukan : item.pengeluaran).toLocaleString("id-ID")}
-                            </td>
-                            <td className="py-4 px-4">
-                              <span className={`inline-flex px-3.5 py-1 text-xs font-bold rounded-full ${
-                                isIncome 
-                                  ? "bg-primary/20 text-primary" 
-                                  : "bg-destructive/15 text-destructive"
-                              }`}>
-                                {isIncome ? "Received" : "Expense"}
-                              </span>
-                            </td>
-                            <td className="py-4 px-4 text-right">
-                              <button 
-                                onClick={() => handleDeleteKeuangan(item.id)}
-                                className="text-muted-foreground hover:text-destructive transition-colors cursor-pointer"
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </button>
-                            </td>
-                          </tr>
-                        );
-                      })}
-                      {(!keuangan || keuangan.length === 0) && (
+                {/* Ledger Table */}
+                <div className="bg-card/20 backdrop-blur-3xl border border-border/60 shadow-xl shadow-emerald-500/30 rounded-3xl p-6 shadow-sm">
+                  <div className="flex justify-between items-center mb-5 pb-3 border-b border-border">
+                    <h3 className="text-base font-bold text-foreground">Buku Kas Rekapitulasi</h3>
+                  </div>
+
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left border-collapse min-w-[800px]">
+                      <thead>
                         <tr>
-                          <td colSpan="6" className="text-center py-10 text-muted-foreground text-sm">Belum ada transaksi.</td>
+                          <th className="py-3 px-4 text-xs font-semibold text-muted-foreground border-b border-border w-1/6">Tanggal</th>
+                          <th className="py-3 px-4 text-xs font-semibold text-muted-foreground border-b border-border w-2/6">Keterangan</th>
+                          <th className="py-3 px-4 text-xs font-semibold text-muted-foreground border-b border-border w-1/6">Kategori</th>
+                          <th className="py-3 px-4 text-xs font-semibold text-muted-foreground border-b border-border w-1/6">Nominal</th>
+                          <th className="py-3 px-4 text-xs font-semibold text-muted-foreground border-b border-border w-1/6">Status</th>
+                          <th className="py-3 px-4 border-b border-border w-12"></th>
                         </tr>
-                      )}
-                    </tbody>
-                  </table>
+                      </thead>
+                      <tbody className="divide-y divide-border/50">
+                        {(keuangan || []).map((item, index) => {
+                          const isIncome = item.pemasukan > 0;
+                          return (
+                            <tr key={item.id} className={`hover:bg-muted/40 transition-colors ${index % 2 === 1 ? 'bg-muted/20' : 'bg-transparent'}`}>
+                              <td className="py-4 px-4 text-sm font-medium text-foreground">{item.tanggal}</td>
+                              <td className="py-4 px-4 text-sm text-foreground/80 font-medium">{item.deskripsi}</td>
+                              <td className="py-4 px-4 text-sm text-muted-foreground">{item.kategori}</td>
+                              <td className="py-4 px-4 text-sm font-mono font-bold text-foreground">
+                                Rp {Number(isIncome ? item.pemasukan : item.pengeluaran).toLocaleString("id-ID")}
+                              </td>
+                              <td className="py-4 px-4">
+                                <span className={`inline-flex px-3.5 py-1 text-xs font-bold rounded-full ${
+                                  isIncome 
+                                    ? "bg-primary/20 text-primary" 
+                                    : "bg-destructive/15 text-destructive"
+                                }`}>
+                                  {isIncome ? "Received" : "Expense"}
+                                </span>
+                              </td>
+                              <td className="py-4 px-4 text-right">
+                                <button 
+                                  onClick={() => handleDeleteKeuangan(item.id)}
+                                  className="text-muted-foreground hover:text-destructive transition-colors cursor-pointer"
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </button>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                        {(!keuangan || keuangan.length === 0) && (
+                          <tr>
+                            <td colSpan="6" className="text-center py-10 text-muted-foreground text-sm">Belum ada transaksi.</td>
+                          </tr>
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
                 </div>
               </div>
             </div>
@@ -1294,7 +1461,9 @@ export default function AdminPage() {
 
           {/* ==================== 6. TAB: QRIS ==================== */}
           {activeTab === "qris" && qris && (
-            <div className="animate-fade-in flex flex-col gap-6 max-w-6xl w-full mx-auto pb-20">
+            <div className="relative">
+              {renderPremiumLockOverlay()}
+              <div className="animate-fade-in flex flex-col gap-6 max-w-6xl w-full mx-auto pb-20">
               <div className="bg-card/20 backdrop-blur-3xl border border-border/60 shadow-xl shadow-emerald-500/30 rounded-3xl p-8 shadow-sm max-w-2xl mx-auto w-full">
                 <h2 className="text-lg font-bold text-foreground mb-6 border-b border-border pb-4">Pengaturan QRIS Donasi</h2>
                 
@@ -1359,8 +1528,8 @@ export default function AdminPage() {
                             compressImageToBase64(file).then(base64 => {
                               setQrisForm({ ...qrisForm, gambar: base64 });
                             }).catch(err => {
-                              console.error(err);
-                              alert("Gagal mengolah gambar QRIS.");
+                              console.error("Error compression QRIS:", err);
+                              showAlert("Gagal", "Gagal mengolah gambar QRIS.");
                             });
                           }
                         }}
@@ -1379,6 +1548,7 @@ export default function AdminPage() {
                   </div>
                 </form>
               </div>
+            </div>
             </div>
           )}
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { useParams } from "next/navigation";
+import { useParams, notFound } from "next/navigation";
 
 import { useEffect, useState, useRef } from "react";
 import Image from "next/image";
@@ -17,7 +17,10 @@ import {
   User,
   HeartHandshake,
   MoonStar,
-  Megaphone
+  Megaphone,
+  Maximize,
+  AlertTriangle,
+  Settings
 } from "lucide-react";
 import { 
   subscribeToSettings, 
@@ -28,7 +31,8 @@ import {
   subscribeToQris, 
   subscribeToIdulFitri, 
   subscribeToIdulAdha,
-  updateJadwalSholatFirestore
+  updateJadwalSholatFirestore,
+  subscribeToMasjidRoot
 } from "@/lib/firestoreService";
 
 let audioCtx = null;
@@ -100,6 +104,7 @@ export default function MasjidDisplay() {
   const [qris, setQris] = useState(null);
   const [idulFitri, setIdulFitri] = useState(null);
   const [idulAdha, setIdulAdha] = useState(null);
+  const [masjidRoot, setMasjidRoot] = useState(undefined);
 
   // UI States
   const [currentSlideIndex, setCurrentSlideIndex] = useState(0);
@@ -128,6 +133,9 @@ export default function MasjidDisplay() {
         if (audioCtx && audioCtx.state === 'suspended') {
           audioCtx.resume();
         }
+        if (!document.fullscreenElement) {
+          document.documentElement.requestFullscreen().catch(() => {});
+        }
       }
       setAudioUnlocked(true);
       window.removeEventListener('click', handleFirstInteraction);
@@ -145,10 +153,55 @@ export default function MasjidDisplay() {
     };
   }, []);
 
+  const [timeOffset, setTimeOffset] = useState(0);
+
+  const handleSimulate = (mode) => {
+    if (!jadwal) return;
+    const realNow = new Date();
+    const currentRealSeconds = realNow.getHours() * 3600 + realNow.getMinutes() * 60 + realNow.getSeconds();
+    
+    const prayers = [
+      jadwal.Subuh, jadwal.Dzuhur, jadwal.Ashar, jadwal.Maghrib, jadwal.Isya
+    ];
+    
+    const jedaIqamah = (settings?.jeda_iqamah ?? 10) * 60;
+    const durasiSholat = (settings?.durasi_sholat ?? 15) * 60;
+    const totalDuration = jedaIqamah + durasiSholat;
+
+    let targetPrayerSeconds = null;
+    for (let timeStr of prayers) {
+      if (!timeStr) continue;
+      const [h, m] = timeStr.split(":").map(Number);
+      const ps = h * 3600 + m * 60;
+      // We want to jump to the CURRENT or NEXT prayer
+      // If we are currently "before" it finishes, that's the one
+      if (currentRealSeconds < ps + totalDuration) {
+        targetPrayerSeconds = ps;
+        break;
+      }
+    }
+    
+    if (targetPrayerSeconds === null && prayers[0]) {
+      const [h, m] = prayers[0].split(":").map(Number);
+      targetPrayerSeconds = h * 3600 + m * 60 + 24 * 3600;
+    }
+    
+    if (targetPrayerSeconds === null) return;
+    
+    let targetSeconds = currentRealSeconds;
+    if (mode === 'menjelang') targetSeconds = targetPrayerSeconds - 10;
+    if (mode === 'adzan') targetSeconds = targetPrayerSeconds;
+    if (mode === 'iqamah') targetSeconds = targetPrayerSeconds + 60;
+    if (mode === 'sholat') targetSeconds = targetPrayerSeconds + jedaIqamah;
+    
+    setTimeOffset(targetSeconds - currentRealSeconds);
+  };
+
   // 1. Clock & Next Prayer Calculation
   useEffect(() => {
     const updateTime = () => {
-      const now = new Date();
+      const realNow = new Date();
+      const now = new Date(realNow.getTime() + timeOffset * 1000);
       setTime(now.toLocaleTimeString("id-ID", { hour: '2-digit', minute: '2-digit', second: '2-digit' }));
       
       const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
@@ -257,10 +310,11 @@ export default function MasjidDisplay() {
     updateTime();
     const interval = setInterval(updateTime, 1000);
     return () => clearInterval(interval);
-  }, [jadwal]);
+  }, [jadwal, settings?.jeda_iqamah, settings?.durasi_sholat, timeOffset]);
 
   // 2. Subscriptions to Firestore (with Fallback to Mock Data)
   useEffect(() => {
+    const unsubRoot = subscribeToMasjidRoot(masjidId, setMasjidRoot);
     const unsubSettings = subscribeToSettings(masjidId, setSettings);
     const unsubJadwal = subscribeToJadwal(masjidId, setJadwal);
     const unsubJumat = subscribeToSholatJumat(masjidId, setSholatJumat);
@@ -271,6 +325,7 @@ export default function MasjidDisplay() {
     const unsubAdha = subscribeToIdulAdha(masjidId, setIdulAdha);
 
     return () => {
+      unsubRoot();
       unsubSettings();
       unsubJadwal();
       unsubJumat();
@@ -345,13 +400,20 @@ export default function MasjidDisplay() {
     }
   }, [isMurottalMode, settings?.murottal?.url]);
 
-  // 3. Setup active slides
+  // Setup active slides based on subscription
   useEffect(() => {
-    if (settings) {
-      let active = (settings.rotation_pages || []).filter(p => p.active);
+    if (settings && masjidRoot !== undefined) {
+      const isPremium = masjidRoot?.subscription_package === 'premium' || masjidId === 'demo-masjid';
+      const premiumPages = ['keuangan', 'keuangan-summary', 'qris', 'idul-fitri', 'idul-adha', 'hitung-mundur'];
+
+      let active = (settings.rotation_pages || []).filter(p => {
+        if (!p.active) return false;
+        if (!isPremium && premiumPages.includes(p.url)) return false;
+        return true;
+      });
       
-      // Inject posters as individual slides
-      if (settings.posters && settings.posters.length > 0) {
+      // Inject posters as individual slides ONLY for Premium
+      if (isPremium && settings.posters && settings.posters.length > 0) {
         settings.posters.forEach((posterUrl, index) => {
           if (posterUrl) {
             active.push({
@@ -368,7 +430,7 @@ export default function MasjidDisplay() {
       setActiveSlides(active);
       setCountdown(settings.rotation_interval || 12);
     }
-  }, [settings]);
+  }, [settings, masjidRoot, masjidId]);
 
   // 4. Slide Rotation Logic
   useEffect(() => {
@@ -444,6 +506,71 @@ export default function MasjidDisplay() {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [activeSlides, settings]);
 
+  const toggleFullScreen = () => {
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen().catch(err => {
+        console.error(`Error attempting to enable fullscreen: ${err.message}`);
+      });
+    } else {
+      if (document.exitFullscreen) {
+        document.exitFullscreen();
+      }
+    }
+  };
+
+  if (masjidRoot === null) {
+    notFound();
+  }
+
+  if (!settings || masjidRoot === undefined) {
+    return (
+      <div className="min-h-screen bg-background text-foreground flex items-center justify-center p-8">
+        <div className="text-center">
+          <div className="h-24 w-24 animate-spin rounded-full border-4 border-primary border-t-transparent mx-auto mb-6"></div>
+          <p className="text-3xl font-bold tracking-wide">Memuat Masjid Digital...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // PAYMENT LOCK CHECK
+  const isExpired = masjidRoot?.active_until ? 
+    (masjidRoot.active_until.toDate ? masjidRoot.active_until.toDate() : new Date(masjidRoot.active_until)).getTime() < Date.now() 
+    : false;
+
+  if (masjidRoot && masjidRoot.payment_status === "pending" && masjidId !== "demo-masjid") {
+    return (
+      <div className="min-h-screen bg-black flex flex-col items-center justify-center p-8 text-center border-8 border-red-500">
+        <div className="w-24 h-24 bg-red-500/20 rounded-full flex items-center justify-center mb-6">
+          <Clock className="w-12 h-12 text-red-500" />
+        </div>
+        <h1 className="text-5xl font-bold text-white mb-6">MENUNGGU PEMBAYARAN</h1>
+        <p className="text-2xl text-gray-400 max-w-3xl leading-relaxed">
+          Layar TV InfoMasjid ini sedang dikunci karena status pendaftaran masih tertunda (Pending). 
+          <br/><br/>
+          Silakan selesaikan pembayaran tagihan Anda. Layar ini akan terbuka otomatis setelah sistem menerima konfirmasi pembayaran dari Midtrans.
+        </p>
+      </div>
+    );
+  }
+
+  // EXPIRY LOCK CHECK
+  if (isExpired && masjidId !== "demo-masjid") {
+    return (
+      <div className="min-h-screen bg-black flex flex-col items-center justify-center p-8 text-center border-8 border-orange-500">
+        <div className="w-24 h-24 bg-orange-500/20 rounded-full flex items-center justify-center mb-6">
+          <AlertTriangle className="w-12 h-12 text-orange-500" />
+        </div>
+        <h1 className="text-5xl font-bold text-white mb-6">LANGGANAN BERAKHIR</h1>
+        <p className="text-2xl text-gray-400 max-w-3xl leading-relaxed">
+          Masa berlaku langganan InfoMasjid Anda telah berakhir.
+          <br/><br/>
+          Silakan perpanjang langganan melalui panel admin untuk kembali menggunakan layanan ini.
+        </p>
+      </div>
+    );
+  }
+
   if (!settings || !jadwal) {
     return (
       <div className="flex h-screen w-screen items-center justify-center bg-background text-primary">
@@ -465,6 +592,15 @@ export default function MasjidDisplay() {
   return (
     <div className={`relative flex flex-col flex-1 w-full h-full h-screen bg-background text-foreground p-6 overflow-hidden font-sans ${settings?.tema || 'theme-emerald'}`}>
       
+      {/* Fullscreen Toggle */}
+      <button 
+        onClick={toggleFullScreen}
+        className="absolute top-4 right-4 z-[200] p-3 bg-black/20 hover:bg-black/40 backdrop-blur-sm rounded-full text-white/50 hover:text-white transition-all pointer-events-auto"
+        title="Layar Penuh (F11)"
+      >
+        <Maximize className="w-5 h-5" />
+      </button>
+
       {/* Audio Unlock Warning */}
       {!audioUnlocked && (
         <div className="absolute top-4 left-1/2 -translate-x-1/2 z-[100] bg-destructive text-destructive-foreground px-6 py-2 rounded-full font-bold text-sm shadow-xl animate-pulse cursor-pointer pointer-events-auto">
@@ -606,7 +742,11 @@ export default function MasjidDisplay() {
       <header className="relative z-10 flex items-center justify-between border-b-2 border-border/60 pb-6 mb-6 shrink-0">
         <div className="flex items-center gap-6">
           <div className="h-28 w-28 flex items-center justify-center shrink-0 drop-shadow-xl">
-            <Image src="/icon.png" alt="Logo InfoMasjid" width={112} height={112} className="w-full h-full object-contain" />
+            {(masjidRoot?.subscription_package === 'premium' || masjidId === 'demo-masjid') && settings?.logo_url ? (
+              <img src={convertGDriveLink(settings.logo_url)} alt="Logo Masjid" className="w-full h-full object-contain" />
+            ) : (
+              <Image src="/icon.png" alt="Logo InfoMasjid" width={112} height={112} className="w-full h-full object-contain" />
+            )}
           </div>
           <div>
             <h1 className="text-5xl font-black tracking-tight text-foreground drop-shadow-sm">
@@ -1240,6 +1380,21 @@ export default function MasjidDisplay() {
         </div>
 
       </footer>
+
+      {/* DEMO SIMULATION CONTROLS */}
+      {masjidId === 'demo-masjid' && (
+        <div className="fixed bottom-24 right-8 z-50 bg-background/90 backdrop-blur-md border-2 border-primary/50 p-4 rounded-2xl shadow-2xl flex flex-col gap-3 opacity-20 hover:opacity-100 transition-all duration-500 transform hover:scale-105 hover:-translate-y-2 group">
+          <p className="text-[11px] font-black text-primary uppercase text-center tracking-widest flex items-center justify-center gap-2">
+            <Settings className="w-3.5 h-3.5 animate-spin-slow" />
+            Tes Animasi TV
+          </p>
+          <div className="flex gap-2">
+            <button className="text-[11px] font-bold bg-primary/10 text-primary border border-primary/30 px-3 py-2 rounded-xl hover:bg-primary hover:text-primary-foreground active:scale-95 transition-all w-24 text-center leading-tight" onClick={() => handleSimulate('menjelang')}>-10 Detik<br/>Adzan</button>
+            <button className="text-[11px] font-bold bg-primary/10 text-primary border border-primary/30 px-3 py-2 rounded-xl hover:bg-primary hover:text-primary-foreground active:scale-95 transition-all w-24 text-center leading-tight" onClick={() => handleSimulate('iqamah')}>Hitung Mundur<br/>Iqamah</button>
+            <button className="text-[11px] font-bold bg-destructive/10 text-destructive border border-destructive/30 px-3 py-2 rounded-xl hover:bg-destructive hover:text-destructive-foreground active:scale-95 transition-all w-24 text-center leading-tight" onClick={() => setTimeOffset(0)}>Kembalikan<br/>Normal</button>
+          </div>
+        </div>
+      )}
 
     </div>
   );

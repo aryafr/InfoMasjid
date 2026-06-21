@@ -27,7 +27,8 @@ function setLocalData(key, data) {
 
 // Helper to wrap subscriptions with fallbacks
 function safeSubscribe(ref, callback, fallbackValue, isDoc = true) {
-  if (isMockFirebase) {
+  const isDemo = ref.path.includes('demo-masjid');
+  if (isMockFirebase || isDemo) {
     const key = ref.path; // e.g. "settings/global"
     const handleUpdate = () => {
       callback(getLocalData(key, fallbackValue));
@@ -74,20 +75,28 @@ function safeSubscribe(ref, callback, fallbackValue, isDoc = true) {
   }
 }
 
+export function subscribeToMasjidRoot(masjidId, callback) {
+  const ref = doc(db, 'masjids', masjidId);
+  return safeSubscribe(ref, callback, masjidId === 'demo-masjid' ? { payment_status: "paid", ownerUid: "demo", subscription_package: "premium" } : null);
+}
+
 export function subscribeToSettings(masjidId, callback) {
   const ref = doc(db, 'masjids', masjidId, 'settings', 'global');
-  return safeSubscribe(ref, callback, mock.defaultSettings);
+  const fallback = masjidId === 'demo-masjid' ? mock.defaultSettings : mock.emptySettings;
+  return safeSubscribe(ref, callback, fallback);
 }
 
 export function subscribeToJadwal(masjidId, callback) {
   const ref = doc(db, 'masjids', masjidId, 'jadwal', 'sholat');
-  return safeSubscribe(ref, callback, mock.defaultJadwalSholat);
+  const fallback = masjidId === 'demo-masjid' ? mock.defaultJadwalSholat : mock.emptyJadwalSholat;
+  return safeSubscribe(ref, callback, fallback);
 }
 
 export function subscribeToSholatJumat(masjidId, callback) {
-  if (isMockFirebase) {
+  const fallback = masjidId === 'demo-masjid' ? mock.defaultSholatJumat : mock.emptySholatJumat;
+  if (isMockFirebase || masjidId === 'demo-masjid') {
     const handleUpdate = () => {
-      callback(getLocalData(masjidId + '/sholat_jumat/default', mock.defaultSholatJumat));
+      callback(getLocalData(masjidId + '/sholat_jumat/default', fallback));
     };
     handleUpdate();
     if (typeof window !== 'undefined') {
@@ -109,22 +118,23 @@ export function subscribeToSholatJumat(masjidId, callback) {
       snapshot.forEach(doc => {
         data = { id: doc.id, ...doc.data() };
       });
-      callback(data || mock.defaultSholatJumat);
+      callback(data || fallback);
     }, (error) => {
       console.warn("Firestore sholat jumat error, using mock data:", error);
-      callback(mock.defaultSholatJumat);
+      callback(fallback);
     });
   } catch (e) {
     console.warn("Firestore setup error for sholat jumat, using mock data:", e);
-    callback(mock.defaultSholatJumat);
+    callback(fallback);
     return () => {};
   }
 }
 
 export function subscribeToPengumuman(masjidId, callback) {
-  if (isMockFirebase) {
+  const fallback = masjidId === 'demo-masjid' ? mock.defaultPengumuman : mock.emptyPengumuman;
+  if (isMockFirebase || masjidId === 'demo-masjid') {
     const handleUpdate = () => {
-      callback(getLocalData(masjidId + '/pengumuman', mock.defaultPengumuman));
+      callback(getLocalData(masjidId + '/pengumuman', fallback));
     };
     handleUpdate();
     if (typeof window !== 'undefined') {
@@ -146,22 +156,23 @@ export function subscribeToPengumuman(masjidId, callback) {
       snapshot.forEach(doc => {
         list.push({ id: doc.id, ...doc.data() });
       });
-      callback(list.length > 0 ? list : mock.defaultPengumuman);
+      callback(list.length > 0 ? list : fallback);
     }, (error) => {
       console.warn("Firestore pengumuman error, using mock data:", error);
-      callback(mock.defaultPengumuman);
+      callback(fallback);
     });
   } catch (e) {
     console.warn("Firestore setup error for pengumuman, using mock data:", e);
-    callback(mock.defaultPengumuman);
+    callback(fallback);
     return () => {};
   }
 }
 
 export function subscribeToKeuangan(masjidId, callback) {
-  if (isMockFirebase) {
+  const fallback = masjidId === 'demo-masjid' ? mock.defaultKeuangan : mock.emptyKeuangan;
+  if (isMockFirebase || masjidId === 'demo-masjid') {
     const handleUpdate = () => {
-      callback(getLocalData(masjidId + '/keuangan', mock.defaultKeuangan));
+      callback(getLocalData(masjidId + '/keuangan', fallback));
     };
     handleUpdate();
     if (typeof window !== 'undefined') {
@@ -183,22 +194,23 @@ export function subscribeToKeuangan(masjidId, callback) {
       snapshot.forEach(doc => {
         list.push({ id: doc.id, ...doc.data() });
       });
-      callback(list.length > 0 ? list : mock.defaultKeuangan);
+      callback(list.length > 0 ? list : fallback);
     }, (error) => {
       console.warn("Firestore keuangan error, using mock data:", error);
-      callback(mock.defaultKeuangan);
+      callback(fallback);
     });
   } catch (e) {
     console.warn("Firestore setup error for keuangan, using mock data:", e);
-    callback(mock.defaultKeuangan);
+    callback(fallback);
     return () => {};
   }
 }
 
 export function subscribeToQris(masjidId, callback) {
-  if (isMockFirebase) {
+  const fallback = masjidId === 'demo-masjid' ? mock.defaultQris : mock.emptyQris;
+  if (isMockFirebase || masjidId === 'demo-masjid') {
     const handleUpdate = () => {
-      callback(getLocalData(masjidId + '/qris', mock.defaultQris));
+      callback(getLocalData(masjidId + '/qris', fallback));
     };
     handleUpdate();
     if (typeof window !== 'undefined') {
@@ -220,31 +232,33 @@ export function subscribeToQris(masjidId, callback) {
       snapshot.forEach(doc => {
         data = { id: doc.id, ...doc.data() };
       });
-      callback(data || mock.defaultQris);
+      callback(data || fallback);
     }, (error) => {
       console.warn("Firestore qris error, using mock data:", error);
-      callback(mock.defaultQris);
+      callback(fallback);
     });
   } catch (e) {
     console.warn("Firestore setup error for qris, using mock data:", e);
-    callback(mock.defaultQris);
+    callback(fallback);
     return () => {};
   }
 }
 
 export function subscribeToIdulFitri(masjidId, callback) {
   const ref = doc(db, 'masjids', masjidId, 'idul_fitri', 'default');
-  return safeSubscribe(ref, callback, mock.defaultIdulFitri);
+  const fallback = masjidId === 'demo-masjid' ? mock.defaultIdulFitri : mock.emptyIdulFitri;
+  return safeSubscribe(ref, callback, fallback);
 }
 
 export function subscribeToIdulAdha(masjidId, callback) {
   const ref = doc(db, 'masjids', masjidId, 'idul_adha', 'default');
-  return safeSubscribe(ref, callback, mock.defaultIdulAdha);
+  const fallback = masjidId === 'demo-masjid' ? mock.defaultIdulAdha : mock.emptyIdulAdha;
+  return safeSubscribe(ref, callback, fallback);
 }
 
 // Client-side automatic prayer times updates (Zero-Setup)
 export async function updateJadwalSholatFirestore(masjidId, sholatTimes) {
-  if (isMockFirebase) {
+  if (isMockFirebase || masjidId === 'demo-masjid') {
     const existing = getLocalData(`masjids/${masjidId}/jadwal/sholat`, mock.defaultJadwalSholat);
     const updated = {
       ...existing,
@@ -288,7 +302,7 @@ export async function updateJadwalSholatFirestore(masjidId, sholatTimes) {
 // Write Helpers for Admin Panel
 
 export async function updateSettings(masjidId, data) {
-  if (isMockFirebase) {
+  if (isMockFirebase || masjidId === 'demo-masjid') {
     setLocalData(`masjids/${masjidId}/settings/global`, data);
     return true;
   }
@@ -304,7 +318,7 @@ export async function updateSettings(masjidId, data) {
 }
 
 export async function updateJadwal(masjidId, data) {
-  if (isMockFirebase) {
+  if (isMockFirebase || masjidId === 'demo-masjid') {
     const existing = getLocalData(`masjids/${masjidId}/jadwal/sholat`, mock.defaultJadwalSholat);
     const updated = {
       ...existing,
@@ -329,7 +343,7 @@ export async function updateJadwal(masjidId, data) {
 }
 
 export async function updateSholatJumat(masjidId, data) {
-  if (isMockFirebase) {
+  if (isMockFirebase || masjidId === 'demo-masjid') {
     setLocalData(`masjids/${masjidId}/sholat_jumat/default`, data);
     return true;
   }
@@ -346,7 +360,7 @@ export async function updateSholatJumat(masjidId, data) {
 }
 
 export async function addPengumuman(masjidId, data) {
-  if (isMockFirebase) {
+  if (isMockFirebase || masjidId === 'demo-masjid') {
     const existing = getLocalData(`masjids/${masjidId}/pengumuman`, mock.defaultPengumuman);
     const newDoc = {
       id: Math.random().toString(36).substring(2, 9),
@@ -367,7 +381,7 @@ export async function addPengumuman(masjidId, data) {
 }
 
 export async function deletePengumuman(masjidId, id) {
-  if (isMockFirebase) {
+  if (isMockFirebase || masjidId === 'demo-masjid') {
     const existing = getLocalData(`masjids/${masjidId}/pengumuman`, mock.defaultPengumuman);
     setLocalData(`masjids/${masjidId}/pengumuman`, existing.filter(item => item.id !== id));
     return true;
@@ -384,7 +398,7 @@ export async function deletePengumuman(masjidId, id) {
 }
 
 export async function addKeuangan(masjidId, data) {
-  if (isMockFirebase) {
+  if (isMockFirebase || masjidId === 'demo-masjid') {
     const existing = getLocalData(`masjids/${masjidId}/keuangan`, mock.defaultKeuangan);
     const newDoc = {
       id: Math.random().toString(36).substring(2, 9),
@@ -405,7 +419,7 @@ export async function addKeuangan(masjidId, data) {
 }
 
 export async function deleteKeuangan(masjidId, id) {
-  if (isMockFirebase) {
+  if (isMockFirebase || masjidId === 'demo-masjid') {
     const existing = getLocalData(`masjids/${masjidId}/keuangan`, mock.defaultKeuangan);
     setLocalData(`masjids/${masjidId}/keuangan`, existing.filter(item => item.id !== id));
     return true;
@@ -422,7 +436,7 @@ export async function deleteKeuangan(masjidId, id) {
 }
 
 export async function updateQris(masjidId, data) {
-  if (isMockFirebase) {
+  if (isMockFirebase || masjidId === 'demo-masjid') {
     setLocalData(`masjids/${masjidId}/qris`, data);
     return true;
   }
@@ -439,7 +453,7 @@ export async function updateQris(masjidId, data) {
 }
 
 export async function updateIdulFitri(masjidId, data) {
-  if (isMockFirebase) {
+  if (isMockFirebase || masjidId === 'demo-masjid') {
     setLocalData(`masjids/${masjidId}/idul_fitri/default`, data);
     return true;
   }
@@ -455,7 +469,7 @@ export async function updateIdulFitri(masjidId, data) {
 }
 
 export async function updateIdulAdha(masjidId, data) {
-  if (isMockFirebase) {
+  if (isMockFirebase || masjidId === 'demo-masjid') {
     setLocalData(`masjids/${masjidId}/idul_adha/default`, data);
     return true;
   }

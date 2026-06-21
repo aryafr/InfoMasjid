@@ -19,8 +19,22 @@ export const viewport = {
 };
 
 export const metadata = {
-  title: "InfoMasjid TV",
-  description: "Smart Signage untuk Layar TV Masjid",
+  title: "InfoMasjid TV - Smart Signage Masjid Digital",
+  description: "Aplikasi Smart Signage dan TV Informasi Digital untuk Masjid di Seluruh Indonesia. Jadwal sholat akurat, pengumuman otomatis, laporan keuangan, dan barcode QRIS infaq.",
+  keywords: ["Smart Signage Masjid", "TV Masjid", "Jadwal Sholat Digital", "Aplikasi Masjid", "InfoMasjid"],
+  openGraph: {
+    title: "InfoMasjid TV - Smart Signage Masjid Digital",
+    description: "Tampilkan jadwal sholat akurat, laporan keuangan transparan, dan pengumuman interaktif langsung di TV Masjid Anda.",
+    url: "https://infomasjid.com",
+    siteName: "InfoMasjid TV",
+    locale: "id_ID",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "InfoMasjid TV - Smart Signage Masjid Digital",
+    description: "Ubah TV biasa menjadi papan informasi pintar untuk jamaah Masjid.",
+  },
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,

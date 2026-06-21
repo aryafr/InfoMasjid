@@ -1,7 +1,50 @@
+export const emptySettings = {
+  nama_aplikasi: "Nama Masjid Anda",
+  footer: "Copyright 2026 | Nama Masjid Anda",
+  running_text: "Selamat datang di sistem InfoMasjid. Silakan atur teks berjalan ini di Dasbor Admin.",
+  logo_url: "",
+  rotation_interval: 10,
+  rotation_enabled: true,
+  rotation_pages: [
+    { url: "welcome", name: "Dashboard Lengkap", active: true },
+    { url: "utama", name: "Jadwal Sholat", active: true },
+    { url: "keuangan", name: "Rincian Keuangan", active: false },
+    { url: "jumat", name: "Jadwal Sholat Jumat", active: true },
+    { url: "pengumuman", name: "Pengumuman", active: false },
+    { url: "keuangan-summary", name: "Ringkasan Keuangan", active: false },
+    { url: "qris", name: "QRIS Donasi", active: false },
+    { url: "idul-fitri", name: "Idul Fitri", active: false },
+    { url: "idul-adha", name: "Idul Adha", active: false },
+    { url: "hitung-mundur", name: "Hitung Mundur Hari Besar", active: false }
+  ],
+  auto_update: { enabled: true, city: "Jakarta", country: "Indonesia", method: 11 },
+  murottal: { enabled: false, url: "" },
+  posters: []
+};
+
+export const emptyJadwalSholat = {
+  Subuh: "04:00", Dzuhur: "12:00", Ashar: "15:00", Maghrib: "18:00", Isya: "19:00",
+  updated_at: new Date().toISOString()
+};
+
+export const emptySholatJumat = {
+  imam: "-", khatib: "-", muadzin: "-", tanggal: new Date().toISOString().split('T')[0]
+};
+
+export const emptyPengumuman = [];
+export const emptyKeuangan = [];
+export const emptyQris = {
+  nama: "", gambar: "", keterangan: "", nomor_rekening: "", bank: "", atas_nama: "", status: "tidak aktif"
+};
+
+export const emptyIdulFitri = { tahun: "", tanggal: "", imam: "-", khatib: "-", muadzin: "-", waktu: "07:00", keterangan: "" };
+export const emptyIdulAdha = { tahun: "", tanggal: "", imam: "-", khatib: "-", muadzin: "-", waktu: "07:00", keterangan: "" };
+
 export const defaultSettings = {
   nama_aplikasi: "MASJID DA'WATUL ISLAM",
   footer: "Copyright 2026 Ali Mochtar Development System | MASJID DA'WATUL ISLAM Balikpapan",
   running_text: "🌙 \"Hati yang tenang ada pada mereka yang selalu mengingat Allah. Mari perbanyak zikir dan shalat berjamaah.\" 📖 “Ingatlah, hanya dengan mengingat Allah hati menjadi tenang.” (QS. Ar-Ra’d: 28)",
+  logo_url: "",
   rotation_interval: 12,
   rotation_enabled: true,
   rotation_pages: [
