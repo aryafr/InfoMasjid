@@ -435,6 +435,26 @@ export async function deleteKeuangan(masjidId, id) {
   }
 }
 
+export async function updateKeuangan(masjidId, id, data) {
+  if (isMockFirebase || masjidId === 'demo-masjid') {
+    const existing = getLocalData(`masjids/${masjidId}/keuangan`, mock.defaultKeuangan);
+    const updated = existing.map(item => item.id === id ? { ...item, ...data } : item);
+    setLocalData(`masjids/${masjidId}/keuangan`, updated);
+    return true;
+  }
+
+  try {
+    const docRef = doc(db, 'masjids', masjidId, 'keuangan', id);
+    // Remove id from data to avoid saving it in the document
+    const { id: _, ...updateData } = data;
+    await setDoc(docRef, updateData, { merge: true });
+    return true;
+  } catch (error) {
+    console.error("Error updating keuangan:", error);
+    return false;
+  }
+}
+
 export async function updateQris(masjidId, data) {
   if (isMockFirebase || masjidId === 'demo-masjid') {
     setLocalData(`masjids/${masjidId}/qris`, data);

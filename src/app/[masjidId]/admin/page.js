@@ -37,7 +37,8 @@ import {
   Copy,
   ExternalLink,
   Menu,
-  X
+  X,
+  Edit2
 } from "lucide-react";
 import ThemeToggle from "@/components/ThemeToggle";
 import { 
@@ -55,8 +56,10 @@ import {
   updateSholatJumat,
   addPengumuman,
   deletePengumuman,
+  deletePengumuman,
   addKeuangan,
   deleteKeuangan,
+  updateKeuangan,
   updateQris,
   updateIdulFitri,
   updateIdulAdha
@@ -204,6 +207,7 @@ export default function AdminPage() {
   const [newKeuangan, setNewKeuangan] = useState({
     deskripsi: "", kategori: "Infak", pemasukan: 0, pengeluaran: 0, tanggal: ""
   });
+  const [editingKeuangan, setEditingKeuangan] = useState(null);
 
   // 1. Auth Listener
   useEffect(() => {
@@ -437,16 +441,40 @@ export default function AdminPage() {
     e.preventDefault();
     if (!newKeuangan.deskripsi) return;
     executeSave(addKeuangan, {
+  const handleAddKeuangan = async (e) => {
+    e.preventDefault();
+    if (!newKeuangan.deskripsi || !newKeuangan.kategori || !newKeuangan.tanggal) {
+      alert("Mohon isi deskripsi, kategori, dan tanggal!");
+      return;
+    }
+    executeSave(addKeuangan, {
       deskripsi: newKeuangan.deskripsi,
       kategori: newKeuangan.kategori,
       pemasukan: Number(newKeuangan.pemasukan || 0),
       pengeluaran: Number(newKeuangan.pengeluaran || 0),
-      tanggal: newKeuangan.tanggal || new Date().toISOString().split('T')[0]
+      tanggal: newKeuangan.tanggal
     }, "Transaksi keuangan baru berhasil dicatat!");
     setNewKeuangan({ deskripsi: "", kategori: "Infak", pemasukan: 0, pengeluaran: 0, tanggal: "" });
   };
 
-  const handleDeleteKeuangan = (id) => {
+  const handleUpdateKeuangan = async (e) => {
+    e.preventDefault();
+    if (!editingKeuangan.deskripsi || !editingKeuangan.kategori || !editingKeuangan.tanggal) {
+      alert("Mohon isi deskripsi, kategori, dan tanggal!");
+      return;
+    }
+    const fn = (mId, data) => updateKeuangan(mId, editingKeuangan.id, data);
+    executeSave(fn, {
+      deskripsi: editingKeuangan.deskripsi,
+      kategori: editingKeuangan.kategori,
+      pemasukan: Number(editingKeuangan.pemasukan || 0),
+      pengeluaran: Number(editingKeuangan.pengeluaran || 0),
+      tanggal: editingKeuangan.tanggal
+    }, "Transaksi keuangan berhasil diperbarui!");
+    setEditingKeuangan(null);
+  };
+
+  const handleDeleteKeuangan = async (id) => {
     showConfirm("Hapus Transaksi", "Hapus transaksi keuangan ini?", () => {
       executeSave(deleteKeuangan, id, "Transaksi keuangan berhasil dihapus!");
     });
@@ -1553,16 +1581,19 @@ export default function AdminPage() {
 
                     <div className="col-span-2">
                       <label className="text-xs text-muted-foreground font-medium mb-1.5 block">Kategori</label>
-                      <select 
+                      <input 
+                        list="kategori-options"
+                        placeholder="Pilih / ketik baru..."
                         value={newKeuangan.kategori}
                         onChange={(e) => setNewKeuangan({ ...newKeuangan, kategori: e.target.value })}
                         className="w-full bg-input/50 border border-border rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary text-foreground"
-                      >
-                        <option value="Infak">Infak</option>
-                        <option value="Donatur">Donatur</option>
-                        <option value="Operasional">Operasional</option>
-                        <option value="Utilitas">Utilitas</option>
-                      </select>
+                      />
+                      <datalist id="kategori-options">
+                        <option value="Infak" />
+                        <option value="Donatur" />
+                        <option value="Operasional" />
+                        <option value="Utilitas" />
+                      </datalist>
                     </div>
 
                     <div className="col-span-2">
@@ -1649,12 +1680,20 @@ export default function AdminPage() {
                                 </span>
                               </td>
                               <td className="py-4 px-4 text-right">
-                                <button 
-                                  onClick={() => handleDeleteKeuangan(item.id)}
-                                  className="text-muted-foreground hover:text-destructive transition-colors cursor-pointer"
-                                >
-                                  <Trash2 className="h-4 w-4" />
-                                </button>
+                                <div className="flex items-center justify-end gap-2">
+                                  <button 
+                                    onClick={() => setEditingKeuangan(item)}
+                                    className="text-muted-foreground hover:text-primary transition-colors cursor-pointer"
+                                  >
+                                    <Edit2 className="h-4 w-4" />
+                                  </button>
+                                  <button 
+                                    onClick={() => handleDeleteKeuangan(item.id)}
+                                    className="text-muted-foreground hover:text-destructive transition-colors cursor-pointer"
+                                  >
+                                    <Trash2 className="h-4 w-4" />
+                                  </button>
+                                </div>
                               </td>
                             </tr>
                           );
@@ -2186,6 +2225,108 @@ export default function AdminPage() {
                 Lanjut ke Pembayaran
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* EDIT KEUANGAN MODAL */}
+      {editingKeuangan && (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-background/80 backdrop-blur-sm" onClick={() => setEditingKeuangan(null)}></div>
+          <div className="relative bg-card w-full max-w-2xl rounded-3xl shadow-2xl border border-border overflow-hidden animate-in fade-in zoom-in-95 duration-200 p-8">
+            <h3 className="text-2xl font-bold text-foreground mb-6">Edit Transaksi Keuangan</h3>
+            
+            <form onSubmit={handleUpdateKeuangan} className="grid grid-cols-12 gap-5 items-end">
+              <div className="col-span-12 md:col-span-4">
+                <label className="text-xs text-muted-foreground font-medium mb-1.5 block">Tanggal</label>
+                <input 
+                  type="date" 
+                  value={editingKeuangan.tanggal}
+                  onChange={(e) => setEditingKeuangan({ ...editingKeuangan, tanggal: e.target.value })}
+                  className="w-full bg-input/50 border border-border rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary text-foreground"
+                />
+              </div>
+
+              <div className="col-span-12 md:col-span-8">
+                <label className="text-xs text-muted-foreground font-medium mb-1.5 block">Keterangan / Deskripsi</label>
+                <input 
+                  type="text" 
+                  value={editingKeuangan.deskripsi}
+                  onChange={(e) => setEditingKeuangan({ ...editingKeuangan, deskripsi: e.target.value })}
+                  className="w-full bg-input/50 border border-border rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary text-foreground"
+                />
+              </div>
+
+              <div className="col-span-12 md:col-span-4">
+                <label className="text-xs text-muted-foreground font-medium mb-1.5 block">Kategori</label>
+                <input 
+                  list="kategori-options-edit"
+                  placeholder="Pilih / ketik baru..."
+                  value={editingKeuangan.kategori}
+                  onChange={(e) => setEditingKeuangan({ ...editingKeuangan, kategori: e.target.value })}
+                  className="w-full bg-input/50 border border-border rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary text-foreground"
+                />
+                <datalist id="kategori-options-edit">
+                  <option value="Infak" />
+                  <option value="Donatur" />
+                  <option value="Operasional" />
+                  <option value="Utilitas" />
+                </datalist>
+              </div>
+
+              <div className="col-span-12 md:col-span-4">
+                <label className="text-xs text-muted-foreground font-medium mb-1.5 block">Tipe</label>
+                <select 
+                  value={editingKeuangan.pemasukan > 0 ? "masuk" : "keluar"}
+                  onChange={(e) => {
+                    const isMasuk = e.target.value === "masuk";
+                    const val = editingKeuangan.pemasukan || editingKeuangan.pengeluaran;
+                    if (isMasuk) {
+                      setEditingKeuangan({ ...editingKeuangan, pemasukan: val, pengeluaran: 0 });
+                    } else {
+                      setEditingKeuangan({ ...editingKeuangan, pemasukan: 0, pengeluaran: val });
+                    }
+                  }}
+                  className="w-full bg-input/50 border border-border rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary text-foreground"
+                >
+                  <option value="masuk">Masuk (+)</option>
+                  <option value="keluar">Keluar (-)</option>
+                </select>
+              </div>
+
+              <div className="col-span-12 md:col-span-4">
+                <label className="text-xs text-muted-foreground font-medium mb-1.5 block">Nominal (Rp)</label>
+                <input 
+                  type="number" 
+                  value={editingKeuangan.pemasukan || editingKeuangan.pengeluaran || ""}
+                  onChange={(e) => {
+                    const val = Number(e.target.value);
+                    if (editingKeuangan.pemasukan > 0 || (!editingKeuangan.pemasukan && !editingKeuangan.pengeluaran)) {
+                      setEditingKeuangan({ ...editingKeuangan, pemasukan: val, pengeluaran: 0 });
+                    } else {
+                      setEditingKeuangan({ ...editingKeuangan, pemasukan: 0, pengeluaran: val });
+                    }
+                  }}
+                  className="w-full bg-input/50 border border-border rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary text-foreground"
+                />
+              </div>
+
+              <div className="col-span-12 flex justify-end gap-3 mt-4">
+                <button 
+                  type="button"
+                  onClick={() => setEditingKeuangan(null)}
+                  className="px-6 py-2.5 rounded-xl text-sm font-medium text-foreground bg-muted hover:bg-muted/80 transition-colors"
+                >
+                  Batal
+                </button>
+                <button 
+                  type="submit" 
+                  className="px-6 py-2.5 rounded-xl text-sm font-bold text-white bg-primary hover:bg-primary/90 transition-colors shadow-lg"
+                >
+                  Simpan Perubahan
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}
