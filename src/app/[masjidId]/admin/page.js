@@ -34,7 +34,8 @@ import {
   Mail,
   Lock,
   ArrowRight,
-  Copy
+  Copy,
+  ExternalLink
 } from "lucide-react";
 import ThemeToggle from "@/components/ThemeToggle";
 import { 
@@ -877,6 +878,14 @@ export default function AdminPage() {
                       >
                         <Copy className="w-4 h-4" />
                         Salin
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => window.open(tvUrl, '_blank')}
+                        className="bg-muted hover:bg-muted/80 text-foreground border border-border p-3 rounded-xl transition-all shadow-sm flex items-center justify-center gap-2 px-6 font-bold text-sm"
+                      >
+                        <ExternalLink className="w-4 h-4" />
+                        Buka
                       </button>
                     </div>
                     <p className="text-xs text-muted-foreground mt-2 flex gap-1 items-center">
