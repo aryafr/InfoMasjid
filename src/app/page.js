@@ -155,54 +155,163 @@ export default function LandingPage() {
           </div>
         </section>
 
-        {/* FEATURES SECTION */}
+        {/* FEATURES SECTION (BENTO BOX STYLE) */}
         <section id="fitur" className="container mx-auto px-6 py-24 relative z-10">
           <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-5xl font-bold mb-4 tracking-tight">Dirancang Untuk Kemudahan</h2>
-            <p className="text-muted-foreground text-lg max-w-2xl mx-auto">Kami mengerti pengurus masjid butuh sistem yang praktis. Tidak perlu teknisi IT untuk menjalankannya.</p>
+            <div className="inline-flex items-center gap-2 bg-primary/10 text-primary px-3 py-1.5 rounded-full text-sm font-bold mb-4 border border-primary/20">
+              <span className="w-2 h-2 rounded-full bg-primary"></span>
+              Fitur Premium
+            </div>
+            <h2 className="text-3xl md:text-5xl font-bold mb-4 tracking-tight">Kendalikan Sepenuhnya dari Admin Panel</h2>
+            <p className="text-muted-foreground text-lg max-w-2xl mx-auto">Dirancang layaknya sistem profesional dengan antarmuka yang sangat mudah dipahami oleh siapa saja.</p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {[
-              {
-                title: "Jadwal Sholat Otomatis",
-                desc: "Terhubung langsung dengan API kemenag/global. Jam sholat menyesuaikan lokasi masjid secara otomatis tanpa di-setting.",
-                icon: Clock
-              },
-              {
-                title: "Admin Berbasis Cloud",
-                desc: "Ubah pengumuman, laporan kas, atau jadwal khatib dari HP atau laptop Anda kapan pun dan di mana pun.",
-                icon: Smartphone
-              },
-              {
-                title: "Real-time Sync",
-                desc: "Selesai mengetik pengumuman di HP, detik itu juga layar TV di masjid langsung berubah tanpa perlu di-refresh.",
-                icon: RefreshCw
-              },
-              {
-                title: "Desain Premium",
-                desc: "Tampilan Glassmorphism transparan layaknya aplikasi MacOS. Membuat jamaah betah membaca informasi masjid.",
-                icon: Monitor
-              },
-              {
-                title: "Laporan Kas Digital",
-                desc: "Tampilkan tabel neraca keuangan secara transparan dan berkelas kepada jamaah secara otomatis berotasi.",
-                icon: Wallet
-              },
-              {
-                title: "Aman Terenkripsi",
-                desc: "Database masing-masing masjid dikunci menggunakan aturan keamanan Google Firebase yang ketat.",
-                icon: ShieldCheck
-              }
-            ].map((feature, idx) => (
-              <div key={idx} className="bg-card/20 backdrop-blur-3xl border border-border/50 rounded-3xl p-8 hover:shadow-xl hover:shadow-emerald-500/10 transition-all hover:-translate-y-1">
-                <div className="h-14 w-14 bg-primary/10 text-primary rounded-2xl flex items-center justify-center mb-6 border border-primary/20">
-                  <feature.icon className="h-7 w-7" />
-                </div>
-                <h3 className="text-xl font-bold mb-3">{feature.title}</h3>
-                <p className="text-muted-foreground leading-relaxed">{feature.desc}</p>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 auto-rows-[400px]">
+            
+            {/* 1. Pengaturan Tampilan & Tema (Spans 2 columns on lg) */}
+            <div className="lg:col-span-2 bg-card/20 backdrop-blur-3xl border border-border/50 rounded-[2rem] p-8 pb-0 flex flex-col overflow-hidden hover:shadow-xl hover:shadow-emerald-500/5 transition-all group">
+              <div>
+                <h3 className="text-2xl font-bold mb-2 text-foreground">Pengaturan Tampilan Visual</h3>
+                <p className="text-muted-foreground">Ubah tema layar, atur durasi rotasi slide, tambahkan poster kegiatan, dan jalankan running text dari satu tempat.</p>
               </div>
-            ))}
+              <div className="mt-8 flex-1 bg-card rounded-t-2xl border-x border-t border-border/50 shadow-2xl relative translate-y-4 group-hover:translate-y-0 transition-transform duration-500 p-4">
+                <div className="flex gap-2 mb-4 border-b border-border pb-2">
+                  <div className="w-20 h-2 bg-primary rounded-full"></div>
+                  <div className="w-16 h-2 bg-muted rounded-full"></div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <div className="h-3 w-1/2 bg-muted rounded-full"></div>
+                    <div className="h-10 w-full bg-input/50 rounded-lg"></div>
+                  </div>
+                  <div className="space-y-2">
+                    <div className="h-3 w-1/3 bg-muted rounded-full"></div>
+                    <div className="h-10 w-full bg-input/50 rounded-lg"></div>
+                  </div>
+                </div>
+                <div className="mt-4 h-24 w-full bg-primary/5 border border-dashed border-primary/30 rounded-xl flex items-center justify-center text-primary text-sm font-medium">
+                  + Upload Poster Slide
+                </div>
+              </div>
+            </div>
+
+            {/* 2. Jadwal Sholat */}
+            <div className="bg-card/20 backdrop-blur-3xl border border-border/50 rounded-[2rem] p-8 pb-0 flex flex-col overflow-hidden hover:shadow-xl hover:shadow-emerald-500/5 transition-all group">
+              <div>
+                <h3 className="text-2xl font-bold mb-2 text-foreground">Sync Jadwal Otomatis</h3>
+                <p className="text-muted-foreground">Otomatis sinkron dengan API Global sesuai nama kota atau atur manual.</p>
+              </div>
+              <div className="mt-8 flex-1 bg-card rounded-t-2xl border-x border-t border-border/50 shadow-2xl relative translate-y-4 group-hover:translate-y-0 transition-transform duration-500 p-5 flex flex-col gap-3">
+                {['Subuh', 'Dzuhur', 'Ashar', 'Maghrib', 'Isya'].map((time, i) => (
+                  <div key={i} className="flex justify-between items-center p-2 rounded-lg bg-muted/20 border border-border/40">
+                    <span className="text-xs font-bold text-foreground/70">{time}</span>
+                    <span className="text-sm font-mono font-bold text-primary">{`04:${10 + i * 3}`}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* 3. Laporan Keuangan */}
+            <div className="bg-card/20 backdrop-blur-3xl border border-border/50 rounded-[2rem] p-8 pb-0 flex flex-col overflow-hidden hover:shadow-xl hover:shadow-emerald-500/5 transition-all group">
+              <div>
+                <h3 className="text-2xl font-bold mb-2 text-foreground">Laporan Kas Digital</h3>
+                <p className="text-muted-foreground">Catat pemasukan & pengeluaran. Saldo otomatis terhitung transparan.</p>
+              </div>
+              <div className="mt-8 flex-1 bg-card rounded-t-2xl border-x border-t border-border/50 shadow-2xl relative translate-y-4 group-hover:translate-y-0 transition-transform duration-500 p-4">
+                <div className="flex justify-between items-center mb-4">
+                  <div className="h-6 w-24 bg-primary/20 rounded-md"></div>
+                  <div className="h-6 w-8 bg-primary/20 rounded-md"></div>
+                </div>
+                <div className="space-y-3">
+                  <div className="flex justify-between items-center pb-2 border-b border-border/50">
+                    <div className="flex flex-col gap-1"><div className="h-3 w-16 bg-muted rounded-full"></div><div className="h-2 w-10 bg-muted/50 rounded-full"></div></div>
+                    <div className="text-emerald-500 text-xs font-bold">+Rp 500rb</div>
+                  </div>
+                  <div className="flex justify-between items-center pb-2 border-b border-border/50">
+                    <div className="flex flex-col gap-1"><div className="h-3 w-20 bg-muted rounded-full"></div><div className="h-2 w-10 bg-muted/50 rounded-full"></div></div>
+                    <div className="text-red-500 text-xs font-bold">-Rp 150rb</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* 4. Pengumuman Masjid (Spans 2 columns on lg) */}
+            <div className="lg:col-span-2 bg-card/20 backdrop-blur-3xl border border-border/50 rounded-[2rem] p-8 pb-0 flex flex-col overflow-hidden hover:shadow-xl hover:shadow-emerald-500/5 transition-all group">
+              <div>
+                <h3 className="text-2xl font-bold mb-2 text-foreground">Pengumuman & Kajian</h3>
+                <p className="text-muted-foreground">Buat pengumuman kajian atau kegiatan lainnya dengan mudah. Layar akan otomatis menampilkannya berurutan sesuai tanggal.</p>
+              </div>
+              <div className="mt-8 flex-1 bg-card rounded-t-2xl border-x border-t border-border/50 shadow-2xl relative translate-y-4 group-hover:translate-y-0 transition-transform duration-500 p-5 flex gap-4">
+                <div className="flex-1 bg-primary/5 border border-primary/10 rounded-xl p-4">
+                  <div className="h-3 w-24 bg-primary/40 rounded-full mb-3"></div>
+                  <div className="h-2 w-full bg-muted rounded-full mb-2"></div>
+                  <div className="h-2 w-full bg-muted rounded-full mb-2"></div>
+                  <div className="h-2 w-2/3 bg-muted rounded-full"></div>
+                </div>
+                <div className="flex-1 bg-input/20 border border-border/50 rounded-xl p-4 opacity-50">
+                  <div className="h-3 w-20 bg-muted rounded-full mb-3"></div>
+                  <div className="h-2 w-full bg-muted/50 rounded-full mb-2"></div>
+                  <div className="h-2 w-4/5 bg-muted/50 rounded-full"></div>
+                </div>
+              </div>
+            </div>
+
+            {/* 5. Jadwal Jumat */}
+            <div className="bg-card/20 backdrop-blur-3xl border border-border/50 rounded-[2rem] p-8 pb-0 flex flex-col overflow-hidden hover:shadow-xl hover:shadow-emerald-500/5 transition-all group">
+              <div>
+                <h3 className="text-2xl font-bold mb-2 text-foreground">Jadwal Jumat</h3>
+                <p className="text-muted-foreground">Atur Khatib, Imam, Muadzin & Bilal dengan rapi.</p>
+              </div>
+              <div className="mt-8 flex-1 bg-card rounded-t-2xl border-x border-t border-border/50 shadow-2xl relative translate-y-4 group-hover:translate-y-0 transition-transform duration-500 p-5">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="bg-muted/20 p-3 rounded-xl border border-border/40">
+                    <div className="text-[10px] text-primary font-bold uppercase mb-1">Khatib</div>
+                    <div className="h-3 w-full bg-muted rounded-full"></div>
+                  </div>
+                  <div className="bg-muted/20 p-3 rounded-xl border border-border/40">
+                    <div className="text-[10px] text-primary font-bold uppercase mb-1">Imam</div>
+                    <div className="h-3 w-3/4 bg-muted rounded-full"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* 6. QRIS Infaq */}
+            <div className="bg-card/20 backdrop-blur-3xl border border-border/50 rounded-[2rem] p-8 flex flex-col overflow-hidden hover:shadow-xl hover:shadow-emerald-500/5 transition-all group">
+              <div>
+                <h3 className="text-2xl font-bold mb-2 text-foreground">QRIS & Rekening</h3>
+                <p className="text-muted-foreground">Tampilkan barcode QRIS dan rekening untuk jamaah.</p>
+              </div>
+              <div className="mt-6 flex flex-1 items-center justify-center">
+                <div className="w-24 h-24 bg-primary/5 border-2 border-dashed border-primary/30 rounded-xl flex items-center justify-center relative translate-y-2 group-hover:translate-y-0 transition-transform duration-500">
+                  <div className="w-16 h-16 bg-primary/20 rounded-sm"></div>
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <div className="w-4 h-4 bg-primary rounded-sm"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* 7. Sholat Ied (Fitri & Adha) */}
+            <div className="bg-card/20 backdrop-blur-3xl border border-border/50 rounded-[2rem] p-8 flex flex-col overflow-hidden hover:shadow-xl hover:shadow-emerald-500/5 transition-all group">
+              <div>
+                <h3 className="text-2xl font-bold mb-2 text-foreground">Sholat Ied</h3>
+                <p className="text-muted-foreground">Atur jadwal, Imam, dan Khatib untuk Idul Fitri & Idul Adha.</p>
+              </div>
+              <div className="mt-8 flex-1 bg-card rounded-t-2xl border-x border-t border-border/50 shadow-2xl relative translate-y-4 group-hover:translate-y-0 transition-transform duration-500 p-5">
+                <div className="space-y-3">
+                  <div className="bg-muted/20 p-3 rounded-xl border border-border/40 flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary text-xs font-bold">IF</div>
+                    <div className="h-3 w-1/2 bg-muted rounded-full"></div>
+                  </div>
+                  <div className="bg-muted/20 p-3 rounded-xl border border-border/40 flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary text-xs font-bold">IA</div>
+                    <div className="h-3 w-2/3 bg-muted rounded-full"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
           </div>
         </section>
 

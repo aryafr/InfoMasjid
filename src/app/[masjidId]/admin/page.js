@@ -520,6 +520,16 @@ export default function AdminPage() {
     executeSave(updateQris, qrisForm, "Data QRIS dan Rekening berhasil disimpan!");
   };
 
+  const handleIdulFitriSubmit = (e) => {
+    e.preventDefault();
+    executeSave(updateIdulFitri, fitriForm, "Data Idul Fitri berhasil disimpan!");
+  };
+
+  const handleIdulAdhaSubmit = (e) => {
+    e.preventDefault();
+    executeSave(updateIdulAdha, adhaForm, "Data Idul Adha berhasil disimpan!");
+  };
+
   const handleRetryPayment = async () => {
     setIsRetryingPayment(true);
     try {
@@ -646,6 +656,7 @@ export default function AdminPage() {
     { id: "pengumuman", name: "Pengumuman", icon: Volume2 },
     { id: "keuangan", name: "Kas Keuangan", icon: DollarSign },
     { id: "qris", name: "QRIS Donasi", icon: QrCode },
+    { id: "ied", name: "Sholat Ied", icon: Moon },
     { id: "panduan", name: "Buku Panduan", icon: BookOpen },
   ];
 
@@ -802,6 +813,7 @@ export default function AdminPage() {
                 {activeTab === 'pengumuman' && "Kelola Pengumuman"}
                 {activeTab === 'keuangan' && "Track due billings"}
                 {activeTab === 'qris' && "Pengaturan QRIS"}
+                {activeTab === 'ied' && "Sholat Ied"}
                 {activeTab === 'panduan' && "Buku Panduan"}
               </h1>
               <p className="text-muted-foreground text-xs mt-0.5">
@@ -812,6 +824,7 @@ export default function AdminPage() {
                 {activeTab === 'pengumuman' && "Buat dan atur pengumuman kegiatan masjid untuk para jamaah."}
                 {activeTab === 'keuangan' && "Pantau arus kas masuk dan keluar secara rapi dan presisi."}
                 {activeTab === 'qris' && "Atur gambar barcode QRIS dan informasi rekening donasi masjid."}
+                {activeTab === 'ied' && "Pengaturan informasi pelaksanaan sholat Idul Fitri dan Idul Adha."}
                 {activeTab === 'panduan' && "Pelajari panduan penggunaan aplikasi secara menyeluruh dan mudah."}
               </p>
             </div>
@@ -825,6 +838,7 @@ export default function AdminPage() {
                 {activeTab === 'pengumuman' && "Pengumuman"}
                 {activeTab === 'keuangan' && "Keuangan"}
                 {activeTab === 'qris' && "QRIS"}
+                {activeTab === 'ied' && "Sholat Ied"}
                 {activeTab === 'panduan' && "Panduan"}
             </div>
             
@@ -1868,6 +1882,106 @@ export default function AdminPage() {
                 </form>
               </div>
             </div>
+            </div>
+          )}
+
+          {/* ==================== 6.5. TAB: SHOLAT IED ==================== */}
+          {activeTab === "ied" && (
+            <div className="relative">
+              {renderPremiumLockOverlay()}
+              <div className="animate-fade-in flex flex-col gap-6 max-w-6xl w-full mx-auto pb-20">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  
+                  {/* Form Idul Fitri */}
+                  <div className="bg-card/20 backdrop-blur-3xl border border-border/60 shadow-xl shadow-teal-500/30 rounded-3xl p-8 shadow-sm">
+                    <h2 className="text-lg font-bold text-foreground mb-6 border-b border-border pb-4 flex items-center gap-2">
+                      <Moon className="h-5 w-5 text-teal-500" /> Idul Fitri
+                    </h2>
+                    <form onSubmit={handleIdulFitriSubmit} className="flex flex-col gap-4">
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="text-sm text-foreground font-medium mb-1 block">Tahun Hijriah</label>
+                          <input type="text" placeholder="1445 H" value={fitriForm.tahun} onChange={(e) => setFitriForm({ ...fitriForm, tahun: e.target.value })} className="w-full bg-input/50 border border-border rounded-xl px-4 py-3 focus:outline-none focus:border-primary text-foreground" />
+                        </div>
+                        <div>
+                          <label className="text-sm text-foreground font-medium mb-1 block">Tanggal (Masehi)</label>
+                          <input type="date" value={fitriForm.tanggal} onChange={(e) => setFitriForm({ ...fitriForm, tanggal: e.target.value })} className="w-full bg-input/50 border border-border rounded-xl px-4 py-3 focus:outline-none focus:border-primary text-foreground" />
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="text-sm text-foreground font-medium mb-1 block">Imam</label>
+                          <input type="text" placeholder="Nama Imam" value={fitriForm.imam} onChange={(e) => setFitriForm({ ...fitriForm, imam: e.target.value })} className="w-full bg-input/50 border border-border rounded-xl px-4 py-3 focus:outline-none focus:border-primary text-foreground" />
+                        </div>
+                        <div>
+                          <label className="text-sm text-foreground font-medium mb-1 block">Khatib</label>
+                          <input type="text" placeholder="Nama Khatib" value={fitriForm.khatib} onChange={(e) => setFitriForm({ ...fitriForm, khatib: e.target.value })} className="w-full bg-input/50 border border-border rounded-xl px-4 py-3 focus:outline-none focus:border-primary text-foreground" />
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="text-sm text-foreground font-medium mb-1 block">Bilal / Muadzin</label>
+                          <input type="text" placeholder="Nama Bilal" value={fitriForm.muadzin} onChange={(e) => setFitriForm({ ...fitriForm, muadzin: e.target.value })} className="w-full bg-input/50 border border-border rounded-xl px-4 py-3 focus:outline-none focus:border-primary text-foreground" />
+                        </div>
+                        <div>
+                          <label className="text-sm text-foreground font-medium mb-1 block">Waktu Pelaksanaan</label>
+                          <input type="time" value={fitriForm.waktu} onChange={(e) => setFitriForm({ ...fitriForm, waktu: e.target.value })} className="w-full bg-input/50 border border-border rounded-xl px-4 py-3 focus:outline-none focus:border-primary text-foreground" />
+                        </div>
+                      </div>
+                      <div>
+                        <label className="text-sm text-foreground font-medium mb-1 block">Keterangan Tambahan</label>
+                        <input type="text" placeholder="Cth: Dilaksanakan di Lapangan Masjid" value={fitriForm.keterangan} onChange={(e) => setFitriForm({ ...fitriForm, keterangan: e.target.value })} className="w-full bg-input/50 border border-border rounded-xl px-4 py-3 focus:outline-none focus:border-primary text-foreground" />
+                      </div>
+                      <button type="submit" className="mt-2 bg-primary text-primary-foreground font-medium px-8 py-3 rounded-xl shadow-sm hover:opacity-90 transition-all cursor-pointer">Simpan Data Idul Fitri</button>
+                    </form>
+                  </div>
+
+                  {/* Form Idul Adha */}
+                  <div className="bg-card/20 backdrop-blur-3xl border border-border/60 shadow-xl shadow-teal-500/30 rounded-3xl p-8 shadow-sm">
+                    <h2 className="text-lg font-bold text-foreground mb-6 border-b border-border pb-4 flex items-center gap-2">
+                      <Moon className="h-5 w-5 text-teal-500" /> Idul Adha
+                    </h2>
+                    <form onSubmit={handleIdulAdhaSubmit} className="flex flex-col gap-4">
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="text-sm text-foreground font-medium mb-1 block">Tahun Hijriah</label>
+                          <input type="text" placeholder="1445 H" value={adhaForm.tahun} onChange={(e) => setAdhaForm({ ...adhaForm, tahun: e.target.value })} className="w-full bg-input/50 border border-border rounded-xl px-4 py-3 focus:outline-none focus:border-primary text-foreground" />
+                        </div>
+                        <div>
+                          <label className="text-sm text-foreground font-medium mb-1 block">Tanggal (Masehi)</label>
+                          <input type="date" value={adhaForm.tanggal} onChange={(e) => setAdhaForm({ ...adhaForm, tanggal: e.target.value })} className="w-full bg-input/50 border border-border rounded-xl px-4 py-3 focus:outline-none focus:border-primary text-foreground" />
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="text-sm text-foreground font-medium mb-1 block">Imam</label>
+                          <input type="text" placeholder="Nama Imam" value={adhaForm.imam} onChange={(e) => setAdhaForm({ ...adhaForm, imam: e.target.value })} className="w-full bg-input/50 border border-border rounded-xl px-4 py-3 focus:outline-none focus:border-primary text-foreground" />
+                        </div>
+                        <div>
+                          <label className="text-sm text-foreground font-medium mb-1 block">Khatib</label>
+                          <input type="text" placeholder="Nama Khatib" value={adhaForm.khatib} onChange={(e) => setAdhaForm({ ...adhaForm, khatib: e.target.value })} className="w-full bg-input/50 border border-border rounded-xl px-4 py-3 focus:outline-none focus:border-primary text-foreground" />
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="text-sm text-foreground font-medium mb-1 block">Bilal / Muadzin</label>
+                          <input type="text" placeholder="Nama Bilal" value={adhaForm.muadzin} onChange={(e) => setAdhaForm({ ...adhaForm, muadzin: e.target.value })} className="w-full bg-input/50 border border-border rounded-xl px-4 py-3 focus:outline-none focus:border-primary text-foreground" />
+                        </div>
+                        <div>
+                          <label className="text-sm text-foreground font-medium mb-1 block">Waktu Pelaksanaan</label>
+                          <input type="time" value={adhaForm.waktu} onChange={(e) => setAdhaForm({ ...adhaForm, waktu: e.target.value })} className="w-full bg-input/50 border border-border rounded-xl px-4 py-3 focus:outline-none focus:border-primary text-foreground" />
+                        </div>
+                      </div>
+                      <div>
+                        <label className="text-sm text-foreground font-medium mb-1 block">Keterangan Tambahan</label>
+                        <input type="text" placeholder="Cth: Dilaksanakan di Lapangan Masjid" value={adhaForm.keterangan} onChange={(e) => setAdhaForm({ ...adhaForm, keterangan: e.target.value })} className="w-full bg-input/50 border border-border rounded-xl px-4 py-3 focus:outline-none focus:border-primary text-foreground" />
+                      </div>
+                      <button type="submit" className="mt-2 bg-primary text-primary-foreground font-medium px-8 py-3 rounded-xl shadow-sm hover:opacity-90 transition-all cursor-pointer">Simpan Data Idul Adha</button>
+                    </form>
+                  </div>
+                  
+                </div>
+              </div>
             </div>
           )}
 
