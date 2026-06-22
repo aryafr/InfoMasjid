@@ -3,6 +3,8 @@ import crypto from "crypto";
 import { adminDb } from "@/lib/firebaseAdmin";
 import { FieldValue } from "firebase-admin/firestore";
 
+export const dynamic = 'force-dynamic';
+
 export async function POST(req) {
   try {
     const payload = await req.json();
