@@ -95,10 +95,11 @@ export default function SuperAdminPage() {
   const handleDelete = async (id) => {
     openConfirmModal(
       "Hapus Data Masjid",
-      `Yakin ingin menghapus data masjid ini (${id})? Tindakan ini tidak dapat dibatalkan.`,
+      `Yakin ingin menghapus data masjid ini (${id}) beserta seluruh pengaturannya? Tindakan ini tidak dapat dibatalkan.`,
       async () => {
         try {
-          await deleteDoc(doc(db, "masjids", id));
+          const { deleteMasjidFull } = require("@/lib/firestoreService");
+          await deleteMasjidFull(id);
           fetchMasjids();
         } catch (error) {
           openConfirmModal("Gagal", "Gagal menghapus data masjid.", null, "alert");

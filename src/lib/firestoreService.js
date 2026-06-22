@@ -1,4 +1,4 @@
-import { doc, collection, onSnapshot, updateDoc, setDoc, addDoc, deleteDoc, query, orderBy, limit } from 'firebase/firestore';
+import { doc, collection, onSnapshot, updateDoc, setDoc, addDoc, deleteDoc, query, orderBy, limit, getDocs } from 'firebase/firestore';
 import { db, isMockFirebase } from './firebase';
 import * as mock from './mockData';
 
@@ -585,6 +585,56 @@ export async function deleteVoucher(id) {
     return true;
   } catch (error) {
     console.error("Error deleting voucher:", error);
+    return false;
+  }
+}
+
+export async function deleteMasjidFull(masjidId) {
+  if (isMockFirebase) {
+    // Just mock it
+    return true;
+  }
+  
+  try {
+    const deleteSubcollectionDocs = async (subPath) => {
+      const colRef = collection(db, 'masjids', masjidId, subPath);
+      const snap = await getDocs(colRef);
+      const deletePromises = [];
+      snap.forEach(d => {
+        deletePromises.push(deleteDoc(d.ref));
+      });
+      await Promise.all(deletePromises);
+    };
+
+    // Delete subcollections that have multiple dynamic documents
+    await Promise.all([
+      deleteSubcollectionDocs('pengumuman'),
+      deleteSubcollectionDocs('keuangan'),
+      deleteSubcollectionDocs('sholat_jumat'),
+      deleteSubcollectionDocs('qris'),
+      deleteSubcollectionDocs('posters') // if posters subcollection exists
+    ]);
+
+    // Delete known static document paths in subcollections
+    const staticDocs = [
+      'settings/global',
+      'jadwal/sholat',
+      'idul_fitri/default',
+      'idul_adha/default',
+      'qris/default',
+      'sholat_jumat/default'
+    ];
+    
+    await Promise.all(
+      staticDocs.map(path => deleteDoc(doc(db, 'masjids', masjidId, ...path.split('/'))).catch(() => {}))
+    );
+
+    // Finally delete the main document
+    await deleteDoc(doc(db, 'masjids', masjidId));
+    
+    return true;
+  } catch (error) {
+    console.error("Error fully deleting masjid:", error);
     return false;
   }
 }
