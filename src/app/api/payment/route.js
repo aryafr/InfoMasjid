@@ -3,7 +3,7 @@ import midtransClient from "midtrans-client";
 
 export async function POST(req) {
   try {
-    const { order_id, gross_amount, customer_details, masjidId } = await req.json();
+    const { order_id, gross_amount, customer_details, masjidId, packageType = "berkah" } = await req.json();
 
     // 1. Validate Input
     if (!order_id || !gross_amount || !customer_details?.email || !masjidId) {
@@ -43,9 +43,10 @@ export async function POST(req) {
           id: masjidId,
           price: gross_amount,
           quantity: 1,
-          name: "Langganan InfoMasjid 1 Tahun"
+          name: `Langganan InfoMasjid 1 Tahun (${packageType === 'premium' ? 'Premium' : 'Berkah'})`
         }
-      ]
+      ],
+      custom_field1: packageType
     };
 
     const transaction = await snap.createTransaction(parameter);

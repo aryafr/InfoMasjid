@@ -31,21 +31,46 @@ export async function POST(req) {
     const masjidId = masjidIdMatch[1];
 
     if (transaction_status === "settlement" || transaction_status === "capture") {
-      const activeUntil = new Date(Date.now() + 365 * 24 * 60 * 60 * 1000);
+      // Fetch existing masjid data
+      const docRef = adminDb.collection("masjids").doc(masjidId);
+      const docSnap = await docRef.get();
+      let newActiveUntil = new Date(Date.now() + 365 * 24 * 60 * 60 * 1000); // default 1 year from now
       
-      // Payment Successful -> Update Firestore
-      await adminDb.collection("masjids").doc(masjidId).set({
+      const packageType = payload.custom_field1;
+
+      if (docSnap.exists) {
+        const data = docSnap.data();
+        let currentExpiry = data.active_until?.toDate() || (data.subscription_expiry ? new Date(data.subscription_expiry) : null);
+        if (!currentExpiry && data.created_at) {
+           currentExpiry = new Date(new Date(data.created_at).getTime() + 365 * 24 * 60 * 60 * 1000);
+        }
+
+        // Accumulate only if current expiry is in the future
+        if (currentExpiry && currentExpiry.getTime() > Date.now()) {
+          newActiveUntil = new Date(currentExpiry.getTime() + 365 * 24 * 60 * 60 * 1000);
+        }
+      }
+
+      const activeUntilIso = newActiveUntil.toISOString();
+      const updateData = {
         payment_status: "paid",
-        active_until: activeUntil, // 1 year active
+        active_until: newActiveUntil,
         subscription_status: "active",
-        subscription_expiry: activeUntil.toISOString(),
+        subscription_expiry: activeUntilIso,
         payment_history: FieldValue.arrayUnion({
           order_id: order_id,
           date: new Date().toISOString(),
           amount: payload.gross_amount,
           status: "success"
         })
-      }, { merge: true });
+      };
+
+      if (packageType) {
+        updateData.subscription_package = packageType;
+      }
+
+      // Payment Successful -> Update Firestore
+      await docRef.set(updateData, { merge: true });
 
       // Fetch user email if possible, or we might not have it in webhook directly
       // Fallback: send to developer or check if customer_details is in payload

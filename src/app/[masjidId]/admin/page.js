@@ -147,6 +147,12 @@ export default function AdminPage() {
   };
 
   const getRemainingDays = () => {
+    if (masjidRoot?.subscription_expiry) {
+        const expireAt = new Date(masjidRoot.subscription_expiry);
+        const now = new Date();
+        const diffTime = Math.max(0, expireAt - now);
+        return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    }
     if (!masjidRoot?.created_at) return 0;
     const createdAt = new Date(masjidRoot.created_at);
     const expireAt = new Date(createdAt.getTime() + (365 * 24 * 60 * 60 * 1000));
@@ -156,6 +162,9 @@ export default function AdminPage() {
   };
 
   // Form States
+  const [renewalModalOpen, setRenewalModalOpen] = useState(false);
+  const [selectedRenewalPackage, setSelectedRenewalPackage] = useState("berkah");
+  const [isExtending, setIsExtending] = useState(false);
   const [isRetryingPayment, setIsRetryingPayment] = useState(false);
   const [masjidRoot, setMasjidRoot] = useState(null);
   const [settingsForm, setSettingsForm] = useState({
@@ -249,28 +258,26 @@ export default function AdminPage() {
     };
   }, [masjidId]);
 
-  // Load Midtrans Snap JS for retry payment
+  // Load Midtrans Snap JS for retry payment and renewals
   useEffect(() => {
-    if (masjidRoot?.payment_status === 'pending') {
-      const isProduction = process.env.NEXT_PUBLIC_MIDTRANS_IS_PRODUCTION === "true";
-      const snapScript = isProduction 
-        ? "https://app.midtrans.com/snap/snap.js" 
-        : "https://app.sandbox.midtrans.com/snap/snap.js";
-      const clientKey = process.env.NEXT_PUBLIC_MIDTRANS_CLIENT_KEY || "";
-      
-      const script = document.createElement("script");
-      script.src = snapScript;
-      script.setAttribute("data-client-key", clientKey);
-      script.async = true;
-      document.body.appendChild(script);
+    const isProduction = process.env.NEXT_PUBLIC_MIDTRANS_IS_PRODUCTION === "true";
+    const snapScript = isProduction 
+      ? "https://app.midtrans.com/snap/snap.js" 
+      : "https://app.sandbox.midtrans.com/snap/snap.js";
+    const clientKey = process.env.NEXT_PUBLIC_MIDTRANS_CLIENT_KEY || "";
+    
+    const script = document.createElement("script");
+    script.src = snapScript;
+    script.setAttribute("data-client-key", clientKey);
+    script.async = true;
+    document.body.appendChild(script);
 
-      return () => {
-        if (document.body.contains(script)) {
-          document.body.removeChild(script);
-        }
-      };
-    }
-  }, [masjidRoot?.payment_status]);
+    return () => {
+      if (document.body.contains(script)) {
+        document.body.removeChild(script);
+      }
+    };
+  }, []);
 
   // 2. Load Firestore subscriptions when logged in
   useEffect(() => {
@@ -459,7 +466,8 @@ export default function AdminPage() {
           order_id: order_id,
           gross_amount: price,
           customer_details: { email: masjidRoot.email, first_name: "Admin" },
-          masjidId: masjidId
+          masjidId: masjidId,
+          packageType: masjidRoot.subscription_package
         })
       });
 
@@ -485,6 +493,54 @@ export default function AdminPage() {
       showAlert("Error", err.message);
     } finally {
       setIsRetryingPayment(false);
+    }
+  };
+
+  const handleExtendSubscription = async () => {
+    setIsExtending(true);
+    try {
+      const price = selectedRenewalPackage === "premium" ? 550000 : 250000;
+      const order_id = `ORDER-${masjidId}-EXT-${Date.now()}`;
+      
+      const res = await fetch("/api/payment", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          order_id: order_id,
+          gross_amount: price,
+          customer_details: { email: masjidRoot.email, first_name: "Admin" },
+          masjidId: masjidId,
+          packageType: selectedRenewalPackage
+        })
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || "Gagal membuat transaksi baru.");
+
+      window.snap.pay(data.token, {
+        onSuccess: function(result) {
+          showAlert("Sukses", "Pembayaran berhasil! Masa aktif langganan Anda telah ditambahkan.");
+          setRenewalModalOpen(false);
+          // Wait a bit before reloading to let webhook finish
+          setTimeout(() => window.location.reload(), 3000);
+        },
+        onPending: function(result){
+          showAlert("Menunggu", "Menunggu konfirmasi pembayaran Anda!");
+          setRenewalModalOpen(false);
+        },
+        onError: function(result) {
+          showAlert("Error", "Pembayaran gagal atau dibatalkan.");
+          setRenewalModalOpen(false);
+        },
+        onClose: function() {
+          showAlert("Info", "Anda menutup popup sebelum menyelesaikan pembayaran.");
+        }
+      });
+    } catch (err) {
+      console.error(err);
+      showAlert("Error", err.message);
+    } finally {
+      setIsExtending(false);
     }
   };
 
@@ -779,13 +835,24 @@ export default function AdminPage() {
                 {/* Subscription Reminder */}
                 <div className="bg-orange-500/10 border border-orange-500/20 text-orange-600 dark:text-orange-400 p-4 rounded-xl mb-6 flex items-start gap-3">
                   <AlertTriangle className="h-5 w-5 shrink-0 mt-0.5" />
-                  <div>
+                  <div className="flex-1">
                     <h4 className="font-bold text-sm">Masa Aktif Layanan</h4>
                     <p className="text-xs mt-1">
                       Sisa masa aktif langganan aplikasi InfoMasjid Anda adalah <strong>{getRemainingDays()} Hari</strong>. 
                       Harap perpanjang sebelum masa berlaku habis agar layar TV tetap dapat beroperasi.
                     </p>
                   </div>
+                  <button 
+                    type="button"
+                    onClick={() => {
+                      setSelectedRenewalPackage(masjidRoot?.subscription_package || "berkah");
+                      setRenewalModalOpen(true);
+                    }}
+                    className="bg-orange-500 hover:bg-orange-600 text-white font-bold px-4 py-2 rounded-lg text-xs transition-colors shrink-0 flex items-center gap-2"
+                  >
+                    <RefreshCw className="w-4 h-4" />
+                    Perpanjang
+                  </button>
                 </div>
 
                 <form onSubmit={handleSettingsSubmit} className="flex flex-col gap-6">
@@ -2016,6 +2083,60 @@ export default function AdminPage() {
                   {modalConfig.type === "confirm" ? "Ya, Lanjutkan" : "Oke, Mengerti"}
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* RENEWAL MODAL */}
+      {renewalModalOpen && (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-background/80 backdrop-blur-sm" onClick={() => setRenewalModalOpen(false)}></div>
+          <div className="relative bg-card w-full max-w-lg rounded-3xl shadow-2xl border border-border overflow-hidden animate-in fade-in zoom-in-95 duration-200 p-8">
+            <h3 className="text-2xl font-bold text-foreground mb-2">Perpanjang Langganan</h3>
+            <p className="text-muted-foreground text-sm mb-6">Pilih paket yang ingin Anda perpanjang. Jika Anda memilih paket yang berbeda, akun Anda akan otomatis disesuaikan setelah pembayaran berhasil.</p>
+            
+            <div className="space-y-4 mb-8">
+              {/* Berkah */}
+              <div 
+                onClick={() => setSelectedRenewalPackage("berkah")}
+                className={`p-4 rounded-xl border-2 cursor-pointer transition-all ${selectedRenewalPackage === 'berkah' ? 'border-primary bg-primary/5' : 'border-border hover:border-primary/50'}`}
+              >
+                <div className="flex justify-between items-center mb-1">
+                  <h4 className="font-bold text-foreground">Paket Berkah (1 Tahun)</h4>
+                  <span className="font-black text-primary">Rp 250.000</span>
+                </div>
+                <p className="text-xs text-muted-foreground">Perpanjang akses ke fitur dasar aplikasi InfoMasjid.</p>
+              </div>
+              
+              {/* Premium */}
+              <div 
+                onClick={() => setSelectedRenewalPackage("premium")}
+                className={`p-4 rounded-xl border-2 cursor-pointer transition-all ${selectedRenewalPackage === 'premium' ? 'border-primary bg-primary/5' : 'border-border hover:border-primary/50'}`}
+              >
+                <div className="flex justify-between items-center mb-1">
+                  <h4 className="font-bold text-foreground flex items-center gap-2">Paket Premium (1 Tahun) <span className="bg-amber-500/20 text-amber-600 px-2 py-0.5 rounded-full text-[10px] uppercase">Rekomendasi</span></h4>
+                  <span className="font-black text-primary">Rp 550.000</span>
+                </div>
+                <p className="text-xs text-muted-foreground">Perpanjang akses ke semua fitur termasuk Murottal otomatis dan Video interaktif.</p>
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-3">
+              <button 
+                onClick={() => setRenewalModalOpen(false)}
+                className="px-6 py-2.5 rounded-xl text-sm font-medium text-foreground bg-muted hover:bg-muted/80 transition-colors"
+              >
+                Batal
+              </button>
+              <button 
+                onClick={handleExtendSubscription}
+                disabled={isExtending}
+                className="px-6 py-2.5 rounded-xl text-sm font-bold text-white bg-primary hover:bg-primary/90 transition-colors shadow-lg flex items-center gap-2 disabled:opacity-50"
+              >
+                {isExtending ? <Loader2 className="w-4 h-4 animate-spin" /> : <ChevronRight className="w-4 h-4" />}
+                Lanjut ke Pembayaran
+              </button>
             </div>
           </div>
         </div>
