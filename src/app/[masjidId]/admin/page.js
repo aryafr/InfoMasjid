@@ -156,6 +156,7 @@ export default function AdminPage() {
   };
 
   // Form States
+  const [isRetryingPayment, setIsRetryingPayment] = useState(false);
   const [masjidRoot, setMasjidRoot] = useState(null);
   const [settingsForm, setSettingsForm] = useState({
     nama_aplikasi: "",
@@ -247,6 +248,29 @@ export default function AdminPage() {
       unsubPromise.then(unsub => { if (typeof unsub === 'function') unsub() });
     };
   }, [masjidId]);
+
+  // Load Midtrans Snap JS for retry payment
+  useEffect(() => {
+    if (masjidRoot?.payment_status === 'pending') {
+      const isProduction = process.env.NEXT_PUBLIC_MIDTRANS_IS_PRODUCTION === "true";
+      const snapScript = isProduction 
+        ? "https://app.midtrans.com/snap/snap.js" 
+        : "https://app.sandbox.midtrans.com/snap/snap.js";
+      const clientKey = process.env.NEXT_PUBLIC_MIDTRANS_CLIENT_KEY || "";
+      
+      const script = document.createElement("script");
+      script.src = snapScript;
+      script.setAttribute("data-client-key", clientKey);
+      script.async = true;
+      document.body.appendChild(script);
+
+      return () => {
+        if (document.body.contains(script)) {
+          document.body.removeChild(script);
+        }
+      };
+    }
+  }, [masjidRoot?.payment_status]);
 
   // 2. Load Firestore subscriptions when logged in
   useEffect(() => {
@@ -422,6 +446,48 @@ export default function AdminPage() {
     executeSave(updateQris, qrisForm, "Data QRIS dan Rekening berhasil disimpan!");
   };
 
+  const handleRetryPayment = async () => {
+    setIsRetryingPayment(true);
+    try {
+      const price = masjidRoot.subscription_package === "premium" ? 550000 : 250000;
+      const order_id = `ORDER-${masjidId}-${Date.now()}`;
+      
+      const res = await fetch("/api/payment", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          order_id: order_id,
+          gross_amount: price,
+          customer_details: { email: masjidRoot.email, first_name: "Admin" },
+          masjidId: masjidId
+        })
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || "Gagal membuat transaksi baru.");
+
+      window.snap.pay(data.token, {
+        onSuccess: function(result) {
+          window.location.reload();
+        },
+        onPending: function(result){
+          showAlert("Menunggu", "Menunggu pembayaran Anda!");
+        },
+        onError: function(result) {
+          showAlert("Error", "Pembayaran gagal atau dibatalkan.");
+        },
+        onClose: function() {
+          showAlert("Info", "Anda menutup popup sebelum menyelesaikan pembayaran.");
+        }
+      });
+    } catch (err) {
+      console.error(err);
+      showAlert("Error", err.message);
+    } finally {
+      setIsRetryingPayment(false);
+    }
+  };
+
   if (authLoading) {
     return (
       <div className="flex h-screen w-screen items-center justify-center bg-background text-primary">
@@ -499,14 +565,24 @@ export default function AdminPage() {
         <p className="text-muted-foreground max-w-lg mb-8 leading-relaxed">
           Akun Anda saat ini berstatus <strong>Pending</strong>. Harap selesaikan pembayaran untuk mengaktifkan Dasbor Admin secara penuh. Hubungi Admin (WhatsApp) jika Anda membutuhkan bantuan atau ingin melakukan aktivasi manual.
         </p>
-        <a 
-          href={`https://wa.me/6282220788248?text=Halo%20Admin%20InfoMasjid,%20saya%20butuh%20bantuan%20terkait%20pembayaran%20akun%20saya%20(${masjidId}).`}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="bg-emerald-600 text-white font-bold px-8 py-4 rounded-xl shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all flex items-center gap-2"
-        >
-          Hubungi Admin (WhatsApp) <ArrowRight className="w-5 h-5" />
-        </a>
+        <div className="flex gap-4">
+          <button 
+            onClick={handleRetryPayment}
+            disabled={isRetryingPayment}
+            className="bg-primary text-primary-foreground font-bold px-8 py-4 rounded-xl shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all flex items-center gap-2 disabled:opacity-50"
+          >
+            {isRetryingPayment ? <Loader2 className="w-5 h-5 animate-spin" /> : <DollarSign className="w-5 h-5" />}
+            Bayar Sekarang
+          </button>
+          <a 
+            href={`https://wa.me/6282220788248?text=Halo%20Admin%20InfoMasjid,%20saya%20butuh%20bantuan%20terkait%20pembayaran%20akun%20saya%20(${masjidId}).`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="bg-emerald-600 text-white font-bold px-8 py-4 rounded-xl shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all flex items-center gap-2"
+          >
+            Hubungi Admin <ArrowRight className="w-5 h-5" />
+          </a>
+        </div>
       </div>
     );
   };
