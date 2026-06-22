@@ -420,7 +420,7 @@ export default function SuperAdminPage() {
                           )}
                         </td>
                         <td className="px-6 py-4">
-                          <div className="flex gap-2 justify-end opacity-40 group-hover:opacity-100 transition-opacity">
+                          <div className="flex gap-2 justify-end md:opacity-40 md:group-hover:opacity-100 transition-opacity">
                             <a 
                               href={`/${m.id}`} 
                               target="_blank" 
