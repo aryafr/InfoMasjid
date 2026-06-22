@@ -72,6 +72,14 @@ export async function POST(req) {
       // Payment Successful -> Update Firestore
       await docRef.set(updateData, { merge: true });
 
+      // Update Voucher Usage if present
+      const voucherCode = payload.custom_field2;
+      if (voucherCode) {
+        const voucherRef = adminDb.collection("vouchers").doc(voucherCode);
+        await voucherRef.set({ used_count: FieldValue.increment(1) }, { merge: true });
+        console.log(`🎫 Voucher ${voucherCode} usage incremented`);
+      }
+
       // Fetch user email if possible, or we might not have it in webhook directly
       // Fallback: send to developer or check if customer_details is in payload
       const email = payload.customer_details?.email || process.env.NEXT_PUBLIC_SUPER_ADMIN_EMAIL;

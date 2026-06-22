@@ -20,11 +20,18 @@ import {
 import ThemeToggle from "@/components/ThemeToggle";
 import StaticTVPreview from "@/components/StaticTVPreview";
 import { useRouter } from "next/navigation";
+import { subscribeToGlobalPricing } from "@/lib/firestoreService";
 
 export default function LandingPage() {
   const containerRef = useRef(null);
   const [scale, setScale] = useState(1);
+  const [pricing, setPricing] = useState(null);
   const router = useRouter();
+
+  useEffect(() => {
+    const unsub = subscribeToGlobalPricing(setPricing);
+    return () => unsub();
+  }, []);
 
   useEffect(() => {
     if (!containerRef.current) return;
@@ -214,11 +221,28 @@ export default function LandingPage() {
                 <p className="text-muted-foreground">Untuk masjid skala kecil & menengah</p>
               </div>
               <div className="mb-8">
-                <div className="flex items-end gap-1">
-                  <span className="text-5xl font-extrabold tracking-tight">Rp 25rb</span>
-                  <span className="text-muted-foreground font-medium mb-1">/ bulan</span>
-                </div>
-                <div className="text-sm text-primary font-medium mt-2">Ditagih Rp 250.000 / tahun</div>
+                {pricing?.is_discount_active ? (
+                  <>
+                    <div className="flex items-end gap-1">
+                      <span className="text-5xl font-extrabold tracking-tight">Rp {Math.round(pricing.berkah.discounted_price / 12 / 1000)}rb</span>
+                      <span className="text-muted-foreground font-medium mb-1">/ bulan</span>
+                    </div>
+                    <div className="text-sm font-medium mt-2 flex items-center gap-2">
+                      <span className="text-muted-foreground line-through">Rp {pricing.berkah.original_price.toLocaleString('id-ID')}</span>
+                      <span className="text-primary font-bold">Ditagih Rp {pricing.berkah.discounted_price.toLocaleString('id-ID')} / tahun</span>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div className="flex items-end gap-1">
+                      <span className="text-5xl font-extrabold tracking-tight">Rp {pricing?.berkah?.original_price ? Math.round(pricing.berkah.original_price / 12 / 1000) : 20}rb</span>
+                      <span className="text-muted-foreground font-medium mb-1">/ bulan</span>
+                    </div>
+                    <div className="text-sm text-primary font-medium mt-2">
+                      Ditagih Rp {(pricing?.berkah?.original_price || 250000).toLocaleString('id-ID')} / tahun
+                    </div>
+                  </>
+                )}
               </div>
               <ul className="flex flex-col gap-4 mb-10 flex-1">
                 {[
@@ -254,11 +278,28 @@ export default function LandingPage() {
                 <p className="text-foreground/70">Solusi lengkap untuk masjid raya</p>
               </div>
               <div className="mb-8">
-                <div className="flex items-end gap-1">
-                  <span className="text-5xl font-extrabold tracking-tight">Rp 55rb</span>
-                  <span className="text-foreground/70 font-medium mb-1">/ bulan</span>
-                </div>
-                <div className="text-sm text-primary font-bold mt-2">Ditagih Rp 550.000 / tahun</div>
+                {pricing?.is_discount_active ? (
+                  <>
+                    <div className="flex items-end gap-1">
+                      <span className="text-5xl font-extrabold tracking-tight text-foreground">Rp {Math.round(pricing.premium.discounted_price / 12 / 1000)}rb</span>
+                      <span className="text-foreground/70 font-medium mb-1">/ bulan</span>
+                    </div>
+                    <div className="text-sm font-medium mt-2 flex items-center gap-2">
+                      <span className="text-foreground/60 line-through">Rp {pricing.premium.original_price.toLocaleString('id-ID')}</span>
+                      <span className="text-primary font-bold">Ditagih Rp {pricing.premium.discounted_price.toLocaleString('id-ID')} / tahun</span>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div className="flex items-end gap-1">
+                      <span className="text-5xl font-extrabold tracking-tight text-foreground">Rp {pricing?.premium?.original_price ? Math.round(pricing.premium.original_price / 12 / 1000) : 45}rb</span>
+                      <span className="text-foreground/70 font-medium mb-1">/ bulan</span>
+                    </div>
+                    <div className="text-sm text-primary font-bold mt-2">
+                      Ditagih Rp {(pricing?.premium?.original_price || 550000).toLocaleString('id-ID')} / tahun
+                    </div>
+                  </>
+                )}
               </div>
               <ul className="flex flex-col gap-4 mb-10 flex-1">
                 {[

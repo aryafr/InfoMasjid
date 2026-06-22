@@ -25,14 +25,47 @@ function CheckoutContent() {
   const [error, setError] = useState("");
   const [customAlert, setCustomAlert] = useState({ show: false, message: "", type: "info", onConfirm: null });
 
+  // Pricing & Voucher state
+  const [globalPricing, setGlobalPricing] = useState(null);
+  const [voucherCode, setVoucherCode] = useState("");
+  const [appliedVoucher, setAppliedVoucher] = useState(null);
+  const [isValidatingVoucher, setIsValidatingVoucher] = useState(false);
+  const [voucherError, setVoucherError] = useState("");
+
   // Autocomplete state
   const [citySearchTerm, setCitySearchTerm] = useState("");
   const [citySuggestions, setCitySuggestions] = useState([]);
   const [isSearchingCity, setIsSearchingCity] = useState(false);
   const [showCityDropdown, setShowCityDropdown] = useState(false);
 
-  const price = pkg === "premium" ? 550000 : 250000;
+  let basePrice = pkg === "premium" ? 550000 : 250000;
+  if (globalPricing) {
+    const pkgPricing = globalPricing[pkg] || {};
+    basePrice = pkgPricing.original_price || basePrice;
+    if (globalPricing.is_discount_active && pkgPricing.discounted_price) {
+      basePrice = pkgPricing.discounted_price;
+    }
+  }
+
+  let finalPrice = basePrice;
+  let discountAmount = 0;
+  if (appliedVoucher) {
+    if (appliedVoucher.discount_type === 'percentage') {
+      discountAmount = (basePrice * appliedVoucher.discount_value) / 100;
+    } else {
+      discountAmount = appliedVoucher.discount_value;
+    }
+    finalPrice = Math.max(0, basePrice - discountAmount);
+  }
+
   const packageName = pkg === "premium" ? "Paket Premium (1 Tahun)" : "Paket Berkah (1 Tahun)";
+
+  useEffect(() => {
+    import("@/lib/firestoreService").then(module => {
+      const unsub = module.subscribeToGlobalPricing(setGlobalPricing);
+      return () => unsub();
+    });
+  }, []);
 
   // Load Midtrans Snap JS
   useEffect(() => {
@@ -80,6 +113,36 @@ function CheckoutContent() {
 
     return () => clearTimeout(delayDebounceFn);
   }, [citySearchTerm]);
+
+  const handleApplyVoucher = async () => {
+    if (!voucherCode) return;
+    setIsValidatingVoucher(true);
+    setVoucherError("");
+    try {
+      const res = await fetch("/api/voucher/validate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ code: voucherCode })
+      });
+      const data = await res.json();
+      if (res.ok && data.valid) {
+        setAppliedVoucher({
+          code: voucherCode.toUpperCase(),
+          discount_type: data.discount_type,
+          discount_value: data.discount_value
+        });
+        setVoucherCode(""); // Clear input on success
+      } else {
+        setVoucherError(data.message || "Voucher tidak valid.");
+        setAppliedVoucher(null);
+      }
+    } catch (e) {
+      setVoucherError("Gagal mengecek voucher.");
+      setAppliedVoucher(null);
+    } finally {
+      setIsValidatingVoucher(false);
+    }
+  };
 
   const handleRegisterAndPay = async (e) => {
     e.preventDefault();
@@ -170,8 +233,10 @@ function CheckoutContent() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           order_id: `ORDER-${masjidId}-${Date.now()}`,
-          gross_amount: price,
+          gross_amount: finalPrice,
           masjidId: masjidId,
+          packageType: pkg,
+          voucherCode: appliedVoucher ? appliedVoucher.code : "",
           customer_details: {
             first_name: formData.nama_masjid,
             email: formData.email,
@@ -273,8 +338,57 @@ function CheckoutContent() {
             <h3 className="text-sm font-bold text-muted-foreground uppercase tracking-widest mb-4">Ringkasan Pesanan</h3>
             <div className="flex justify-between items-center pb-4 border-b border-border/50">
               <span className="font-bold text-lg">{packageName}</span>
-              <span className="font-black text-xl text-primary">Rp {price.toLocaleString("id-ID")}</span>
+              <div className="text-right">
+                {globalPricing && globalPricing.is_discount_active && (
+                  <div className="text-sm text-muted-foreground line-through">Rp {globalPricing[pkg]?.original_price?.toLocaleString("id-ID")}</div>
+                )}
+                <span className="font-black text-xl text-primary">Rp {basePrice.toLocaleString("id-ID")}</span>
+              </div>
             </div>
+            
+            {/* VOUCHER SECTION */}
+            <div className="py-4 border-b border-border/50">
+              <label className="text-sm font-bold text-foreground mb-2 block">Punya Kode Voucher?</label>
+              <div className="flex gap-2">
+                <input 
+                  type="text" 
+                  placeholder="Masukkan kode..." 
+                  value={voucherCode}
+                  onChange={(e) => setVoucherCode(e.target.value.toUpperCase())}
+                  disabled={appliedVoucher !== null || isValidatingVoucher}
+                  className="w-full bg-background border border-border rounded-xl px-4 py-2 focus:outline-none focus:ring-2 focus:ring-primary font-medium uppercase"
+                />
+                {appliedVoucher ? (
+                  <button 
+                    type="button"
+                    onClick={() => {
+                      setAppliedVoucher(null);
+                      setVoucherError("");
+                    }}
+                    className="bg-destructive/10 text-destructive font-bold px-4 rounded-xl hover:bg-destructive/20 transition-colors shrink-0"
+                  >
+                    Batal
+                  </button>
+                ) : (
+                  <button 
+                    type="button"
+                    onClick={handleApplyVoucher}
+                    disabled={isValidatingVoucher || !voucherCode}
+                    className="bg-secondary text-secondary-foreground font-bold px-4 rounded-xl hover:opacity-90 transition-opacity disabled:opacity-50 shrink-0 flex items-center gap-2"
+                  >
+                    {isValidatingVoucher ? <Loader2 className="h-4 w-4 animate-spin" /> : "Terapkan"}
+                  </button>
+                )}
+              </div>
+              {voucherError && <p className="text-xs text-destructive font-bold mt-2">{voucherError}</p>}
+              {appliedVoucher && <p className="text-xs text-emerald-500 font-bold mt-2 flex items-center gap-1"><CheckCircle className="h-3.5 w-3.5" /> Voucher {appliedVoucher.code} berhasil diterapkan (-Rp {discountAmount.toLocaleString("id-ID")})</p>}
+            </div>
+
+            <div className="pt-4 pb-4 border-b border-border/50 flex justify-between items-center bg-primary/5 px-4 rounded-xl">
+              <span className="font-bold">Total Pembayaran</span>
+              <span className="font-black text-2xl text-primary">Rp {finalPrice.toLocaleString("id-ID")}</span>
+            </div>
+
             <div className="pt-4 flex flex-col gap-2">
               <div className="flex items-center gap-2 text-sm font-medium"><CheckCircle className="h-4 w-4 text-emerald-500"/> Akses penuh dasbor admin</div>
               <div className="flex items-center gap-2 text-sm font-medium"><CheckCircle className="h-4 w-4 text-emerald-500"/> Sinkronisasi jadwal otomatis</div>

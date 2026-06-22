@@ -9,7 +9,7 @@ import {
   LogOut, Users, CheckCircle, Clock, Trash2, 
   ShieldCheck, ExternalLink, Bell, User, LayoutDashboard,
   TrendingUp, CreditCard, Activity, MoreVertical, Building,
-  ArrowUpCircle, Menu, X
+  ArrowUpCircle, Menu, X, Tag, Ticket
 } from "lucide-react";
 import Image from "next/image";
 import ThemeToggle from "@/components/ThemeToggle";
@@ -17,6 +17,14 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer,
   PieChart as RechartsPieChart, Pie, Cell
 } from "recharts";
+import { 
+  subscribeToGlobalPricing, 
+  updateGlobalPricing, 
+  subscribeToVouchers, 
+  addVoucher, 
+  updateVoucher, 
+  deleteVoucher 
+} from "@/lib/firestoreService";
 
 const PACKAGE_PRICE = 250000; // Assumption based on previous logic
 
@@ -30,6 +38,19 @@ export default function SuperAdminPage() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const router = useRouter();
 
+  // Settings & Vouchers State
+  const [globalPricing, setGlobalPricing] = useState({
+    is_discount_active: false,
+    berkah: { original_price: 250000, discounted_price: 200000 },
+    premium: { original_price: 550000, discounted_price: 450000 }
+  });
+  const [vouchers, setVouchers] = useState([]);
+  const [isSavingPricing, setIsSavingPricing] = useState(false);
+  const [voucherModal, setVoucherModal] = useState({ isOpen: false, isEdit: false, data: null });
+  const [newVoucher, setNewVoucher] = useState({
+    code: "", discount_type: "percentage", discount_value: 0, max_uses: 0, valid_until: ""
+  });
+
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       if (!currentUser) {
@@ -41,7 +62,15 @@ export default function SuperAdminPage() {
         fetchMasjids();
       }
     });
-    return () => unsubscribe();
+    
+    const unsubPricing = subscribeToGlobalPricing((data) => setGlobalPricing(data));
+    const unsubVouchers = subscribeToVouchers((data) => setVouchers(data));
+    
+    return () => {
+      unsubscribe();
+      unsubPricing();
+      unsubVouchers();
+    };
   }, [router]);
 
   const fetchMasjids = async () => {
@@ -203,6 +232,27 @@ export default function SuperAdminPage() {
               {activeTab === 'customers' && <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-primary rounded-r-md hidden md:block"></div>}
               <Users className="h-5 w-5 shrink-0" />
               <span className="hidden md:block">Customers</span>
+            </button>
+
+            <button 
+              onClick={() => {
+                setActiveTab("pricing");
+                setIsSidebarOpen(false);
+              }}
+              className={`flex items-center justify-center md:justify-start gap-3 px-3 md:px-4 py-3 rounded-xl text-sm transition-all cursor-pointer relative group ${activeTab === 'pricing' ? 'bg-primary/10 text-primary font-bold' : 'text-muted-foreground hover:bg-accent/50 hover:text-foreground'}`}>
+              {activeTab === 'pricing' && <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-primary rounded-r-md hidden md:block"></div>}
+              <Tag className="h-5 w-5 shrink-0" />
+              <span className="hidden md:block">Harga & Diskon</span>
+            </button>
+            <button 
+              onClick={() => {
+                setActiveTab("vouchers");
+                setIsSidebarOpen(false);
+              }}
+              className={`flex items-center justify-center md:justify-start gap-3 px-3 md:px-4 py-3 rounded-xl text-sm transition-all cursor-pointer relative group ${activeTab === 'vouchers' ? 'bg-primary/10 text-primary font-bold' : 'text-muted-foreground hover:bg-accent/50 hover:text-foreground'}`}>
+              {activeTab === 'vouchers' && <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-primary rounded-r-md hidden md:block"></div>}
+              <Ticket className="h-5 w-5 shrink-0" />
+              <span className="hidden md:block">Vouchers</span>
             </button>
 
           </nav>
@@ -472,6 +522,163 @@ export default function SuperAdminPage() {
             </div>
             )}
 
+            {/* PRICING TAB */}
+            {activeTab === "pricing" && (
+              <div className="bg-card rounded-3xl border border-border/50 shadow-sm overflow-hidden flex flex-col p-6">
+                <h3 className="font-bold text-xl mb-4">Pengaturan Harga & Diskon Bundle</h3>
+                
+                <div className="flex items-center justify-between mb-6 p-4 bg-muted/30 rounded-2xl border border-border/50">
+                  <div>
+                    <h4 className="font-bold text-foreground">Status Diskon Global</h4>
+                    <p className="text-sm text-muted-foreground">Aktifkan untuk menerapkan harga coret di seluruh aplikasi.</p>
+                  </div>
+                  <label className="relative inline-flex items-center cursor-pointer">
+                    <input 
+                      type="checkbox" 
+                      className="sr-only peer"
+                      checked={globalPricing?.is_discount_active || false}
+                      onChange={async (e) => {
+                        const val = e.target.checked;
+                        const newPricing = { ...globalPricing, is_discount_active: val };
+                        setGlobalPricing(newPricing);
+                        await updateGlobalPricing({ is_discount_active: val });
+                      }}
+                    />
+                    <div className="w-14 h-7 bg-muted peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-primary"></div>
+                  </label>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {/* Berkah */}
+                  <div className="p-4 border border-border/50 rounded-2xl">
+                    <h4 className="font-bold text-lg mb-4">Paket Berkah</h4>
+                    <div className="space-y-4">
+                      <div>
+                        <label className="text-sm font-medium mb-1 block">Harga Asli (Rp)</label>
+                        <input type="number" className="w-full bg-input/50 border border-border rounded-xl px-3 py-2" 
+                          value={globalPricing?.berkah?.original_price || 0} 
+                          onChange={e => setGlobalPricing({...globalPricing, berkah: {...globalPricing.berkah, original_price: Number(e.target.value)}})} 
+                        />
+                      </div>
+                      <div>
+                        <label className="text-sm font-medium mb-1 block">Harga Diskon (Rp)</label>
+                        <input type="number" className="w-full bg-input/50 border border-border rounded-xl px-3 py-2" 
+                          value={globalPricing?.berkah?.discounted_price || 0} 
+                          onChange={e => setGlobalPricing({...globalPricing, berkah: {...globalPricing.berkah, discounted_price: Number(e.target.value)}})} 
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Premium */}
+                  <div className="p-4 border border-border/50 rounded-2xl">
+                    <h4 className="font-bold text-lg mb-4">Paket Premium</h4>
+                    <div className="space-y-4">
+                      <div>
+                        <label className="text-sm font-medium mb-1 block">Harga Asli (Rp)</label>
+                        <input type="number" className="w-full bg-input/50 border border-border rounded-xl px-3 py-2" 
+                          value={globalPricing?.premium?.original_price || 0} 
+                          onChange={e => setGlobalPricing({...globalPricing, premium: {...globalPricing.premium, original_price: Number(e.target.value)}})} 
+                        />
+                      </div>
+                      <div>
+                        <label className="text-sm font-medium mb-1 block">Harga Diskon (Rp)</label>
+                        <input type="number" className="w-full bg-input/50 border border-border rounded-xl px-3 py-2" 
+                          value={globalPricing?.premium?.discounted_price || 0} 
+                          onChange={e => setGlobalPricing({...globalPricing, premium: {...globalPricing.premium, discounted_price: Number(e.target.value)}})} 
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="mt-6 flex justify-end">
+                  <button 
+                    disabled={isSavingPricing}
+                    onClick={async () => {
+                      setIsSavingPricing(true);
+                      await updateGlobalPricing(globalPricing);
+                      setIsSavingPricing(false);
+                      alert("Pengaturan harga disimpan!");
+                    }}
+                    className="bg-primary text-white font-bold px-6 py-2.5 rounded-xl shadow-lg hover:opacity-90 disabled:opacity-50"
+                  >
+                    {isSavingPricing ? "Menyimpan..." : "Simpan Pengaturan Harga"}
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* VOUCHERS TAB */}
+            {activeTab === "vouchers" && (
+              <div className="bg-card rounded-3xl border border-border/50 shadow-sm overflow-hidden flex flex-col p-6">
+                <div className="flex justify-between items-center mb-6">
+                  <h3 className="font-bold text-xl">Manajemen Voucher</h3>
+                  <button 
+                    onClick={() => {
+                      setNewVoucher({ code: "", discount_type: "percentage", discount_value: 0, max_uses: 0, valid_until: "", is_active: true });
+                      setVoucherModal({ isOpen: true, isEdit: false, data: null });
+                    }}
+                    className="bg-primary text-white font-bold px-4 py-2 rounded-xl text-sm"
+                  >
+                    Tambah Voucher
+                  </button>
+                </div>
+
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left border-collapse min-w-[800px]">
+                    <thead>
+                      <tr className="bg-muted/30 border-b border-border/50">
+                        <th className="px-4 py-3 font-semibold text-xs uppercase text-muted-foreground">Kode</th>
+                        <th className="px-4 py-3 font-semibold text-xs uppercase text-muted-foreground">Tipe</th>
+                        <th className="px-4 py-3 font-semibold text-xs uppercase text-muted-foreground">Nilai</th>
+                        <th className="px-4 py-3 font-semibold text-xs uppercase text-muted-foreground">Batas</th>
+                        <th className="px-4 py-3 font-semibold text-xs uppercase text-muted-foreground">Terpakai</th>
+                        <th className="px-4 py-3 font-semibold text-xs uppercase text-muted-foreground">Status</th>
+                        <th className="px-4 py-3 font-semibold text-xs uppercase text-right">Aksi</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {vouchers.map(v => (
+                        <tr key={v.id} className="border-b border-border/50">
+                          <td className="px-4 py-4 font-bold text-primary">{v.code}</td>
+                          <td className="px-4 py-4 capitalize">{v.discount_type}</td>
+                          <td className="px-4 py-4">{v.discount_type === 'percentage' ? `${v.discount_value}%` : `Rp ${Number(v.discount_value).toLocaleString('id-ID')}`}</td>
+                          <td className="px-4 py-4">{v.max_uses > 0 ? v.max_uses : 'Unlimited'}</td>
+                          <td className="px-4 py-4">{v.used_count || 0}</td>
+                          <td className="px-4 py-4">
+                            <label className="relative inline-flex items-center cursor-pointer">
+                              <input 
+                                type="checkbox" 
+                                className="sr-only peer"
+                                checked={v.is_active}
+                                onChange={async (e) => {
+                                  await updateVoucher(v.id, { is_active: e.target.checked });
+                                }}
+                              />
+                              <div className="w-11 h-6 bg-muted peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-500"></div>
+                            </label>
+                          </td>
+                          <td className="px-4 py-4 text-right">
+                            <button onClick={async () => {
+                              if (confirm("Hapus voucher ini?")) {
+                                await deleteVoucher(v.id);
+                              }
+                            }} className="p-2 text-muted-foreground hover:text-destructive">
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                      {vouchers.length === 0 && (
+                        <tr><td colSpan="7" className="text-center py-6 text-muted-foreground">Belum ada voucher.</td></tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+
           </div>
         </main>
       </div>
@@ -633,6 +840,70 @@ export default function SuperAdminPage() {
         )}
 
       </aside>
+      {/* VOUCHER MODAL */}
+      {voucherModal.isOpen && (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-background/80 backdrop-blur-sm" onClick={() => setVoucherModal({ isOpen: false, isEdit: false, data: null })}></div>
+          <div className="relative bg-card w-full max-w-lg rounded-3xl shadow-2xl border border-border p-6 md:p-8 animate-in fade-in zoom-in-95 duration-200">
+            <h3 className="text-xl font-bold mb-6">Tambah Voucher Baru</h3>
+            <form onSubmit={async (e) => {
+              e.preventDefault();
+              await addVoucher({
+                ...newVoucher,
+                code: newVoucher.code.toUpperCase(),
+                used_count: 0,
+                created_at: new Date().toISOString()
+              });
+              setVoucherModal({ isOpen: false, isEdit: false, data: null });
+            }}>
+              <div className="space-y-4">
+                <div>
+                  <label className="text-sm font-medium mb-1 block">Kode Voucher</label>
+                  <input type="text" required placeholder="PROMO2026" className="w-full bg-input border border-border rounded-xl px-4 py-2 uppercase" 
+                    value={newVoucher.code} onChange={e => setNewVoucher({...newVoucher, code: e.target.value})} 
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-sm font-medium mb-1 block">Tipe Diskon</label>
+                    <select className="w-full bg-input border border-border rounded-xl px-4 py-2" 
+                      value={newVoucher.discount_type} onChange={e => setNewVoucher({...newVoucher, discount_type: e.target.value})}
+                    >
+                      <option value="percentage">Persentase (%)</option>
+                      <option value="fixed">Nominal Tetap (Rp)</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium mb-1 block">Nilai Diskon</label>
+                    <input type="number" required placeholder="0" className="w-full bg-input border border-border rounded-xl px-4 py-2" 
+                      value={newVoucher.discount_value || ""} onChange={e => setNewVoucher({...newVoucher, discount_value: Number(e.target.value)})} 
+                    />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-sm font-medium mb-1 block">Batas Pemakaian</label>
+                    <input type="number" placeholder="0 = Unlimited" className="w-full bg-input border border-border rounded-xl px-4 py-2" 
+                      value={newVoucher.max_uses || ""} onChange={e => setNewVoucher({...newVoucher, max_uses: Number(e.target.value)})} 
+                    />
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium mb-1 block">Kedaluwarsa (Opsional)</label>
+                    <input type="date" className="w-full bg-input border border-border rounded-xl px-4 py-2" 
+                      value={newVoucher.valid_until} onChange={e => setNewVoucher({...newVoucher, valid_until: e.target.value})} 
+                    />
+                  </div>
+                </div>
+              </div>
+              <div className="mt-8 flex justify-end gap-3">
+                <button type="button" onClick={() => setVoucherModal({ isOpen: false })} className="px-6 py-2.5 rounded-xl bg-muted text-foreground">Batal</button>
+                <button type="submit" className="px-6 py-2.5 rounded-xl bg-primary text-white font-bold">Simpan Voucher</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }

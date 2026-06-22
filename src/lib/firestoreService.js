@@ -503,3 +503,85 @@ export async function updateIdulAdha(masjidId, data) {
     return false;
   }
 }
+
+// ==============================
+// GLOBAL PRICING & VOUCHERS
+// ==============================
+
+export function subscribeToGlobalPricing(callback) {
+  const ref = doc(db, 'configs', 'pricing');
+  const fallback = {
+    is_discount_active: false,
+    berkah: { original_price: 250000, discounted_price: 200000 },
+    premium: { original_price: 550000, discounted_price: 450000 }
+  };
+  return safeSubscribe(ref, callback, fallback);
+}
+
+export async function updateGlobalPricing(data) {
+  if (isMockFirebase) return true;
+  try {
+    const ref = doc(db, 'configs', 'pricing');
+    await setDoc(ref, data, { merge: true });
+    return true;
+  } catch (error) {
+    console.error("Error updating global pricing:", error);
+    return false;
+  }
+}
+
+export function subscribeToVouchers(callback) {
+  if (isMockFirebase) {
+    callback([]);
+    return () => {};
+  }
+  const ref = collection(db, 'vouchers');
+  try {
+    return onSnapshot(ref, (snapshot) => {
+      const list = [];
+      snapshot.forEach(d => list.push({ id: d.id, ...d.data() }));
+      callback(list);
+    });
+  } catch (e) {
+    console.warn("Firestore vouchers error:", e);
+    callback([]);
+    return () => {};
+  }
+}
+
+export async function addVoucher(data) {
+  if (isMockFirebase) return true;
+  try {
+    const ref = doc(db, 'vouchers', data.code);
+    await setDoc(ref, data);
+    return true;
+  } catch (error) {
+    console.error("Error adding voucher:", error);
+    return false;
+  }
+}
+
+export async function updateVoucher(id, data) {
+  if (isMockFirebase) return true;
+  try {
+    const ref = doc(db, 'vouchers', id);
+    const { id: _, ...updateData } = data;
+    await setDoc(ref, updateData, { merge: true });
+    return true;
+  } catch (error) {
+    console.error("Error updating voucher:", error);
+    return false;
+  }
+}
+
+export async function deleteVoucher(id) {
+  if (isMockFirebase) return true;
+  try {
+    const ref = doc(db, 'vouchers', id);
+    await deleteDoc(ref);
+    return true;
+  } catch (error) {
+    console.error("Error deleting voucher:", error);
+    return false;
+  }
+}

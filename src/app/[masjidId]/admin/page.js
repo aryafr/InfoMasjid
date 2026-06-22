@@ -56,7 +56,6 @@ import {
   updateSholatJumat,
   addPengumuman,
   deletePengumuman,
-  deletePengumuman,
   addKeuangan,
   deleteKeuangan,
   updateKeuangan,
@@ -437,10 +436,6 @@ export default function AdminPage() {
     });
   };
 
-  const handleAddKeuangan = (e) => {
-    e.preventDefault();
-    if (!newKeuangan.deskripsi) return;
-    executeSave(addKeuangan, {
   const handleAddKeuangan = async (e) => {
     e.preventDefault();
     if (!newKeuangan.deskripsi || !newKeuangan.kategori || !newKeuangan.tanggal) {
