@@ -53,12 +53,6 @@ function CheckoutContent() {
   // Fetch Cities (simple mock or real API)
   // We removed the hardcoded list to avoid confusing the user.
 
-  const detectLocation = () => {
-    if (!navigator.geolocation) {
-      setCustomAlert({ show: true, message: "Browser Anda tidak mendukung deteksi lokasi.", type: "error", onConfirm: null });
-      return;
-    }
-
 
   const handleRegisterAndPay = async (e) => {
     e.preventDefault();
