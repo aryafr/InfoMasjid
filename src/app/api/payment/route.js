@@ -22,10 +22,10 @@ export async function POST(req) {
     }
 
     const serverKey = process.env.MIDTRANS_SERVER_KEY || "";
+    const isProduction = process.env.NEXT_PUBLIC_MIDTRANS_IS_PRODUCTION === "true";
 
-    // Toggle for Production
     let snap = new midtransClient.Snap({
-      isProduction: true, 
+      isProduction: isProduction, 
       serverKey: serverKey,
     });
 
