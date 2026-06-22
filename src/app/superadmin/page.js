@@ -9,7 +9,7 @@ import {
   LogOut, Users, CheckCircle, Clock, Trash2, 
   ShieldCheck, ExternalLink, Bell, User, LayoutDashboard,
   TrendingUp, CreditCard, Activity, MoreVertical, Building,
-  ArrowUpCircle
+  ArrowUpCircle, Menu, X
 } from "lucide-react";
 import Image from "next/image";
 import ThemeToggle from "@/components/ThemeToggle";
@@ -27,6 +27,7 @@ export default function SuperAdminPage() {
   const [activeTab, setActiveTab] = useState("dashboard");
   const [editPackageModal, setEditPackageModal] = useState({ isOpen: false, id: null, currentPackage: "berkah" });
   const [confirmModal, setConfirmModal] = useState({ isOpen: false, title: "", message: "", onConfirm: null, type: "default" });
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
@@ -159,30 +160,49 @@ export default function SuperAdminPage() {
   return (
     <div className="flex h-screen bg-background text-foreground font-sans overflow-hidden">
       
+      {/* MOBILE SIDEBAR OVERLAY */}
+      {isSidebarOpen && (
+        <div 
+          className="fixed inset-0 bg-background/80 backdrop-blur-sm z-40 md:hidden"
+          onClick={() => setIsSidebarOpen(false)}
+        />
+      )}
+
       {/* 1. LEFT SIDEBAR */}
-      <aside className="w-20 lg:w-64 bg-card/40 backdrop-blur-3xl border-r border-border/60 flex flex-col justify-between shrink-0 h-full z-20 shadow-xl shadow-primary/5 transition-all">
+      <aside className={`fixed inset-y-0 left-0 z-50 w-64 bg-card/40 backdrop-blur-3xl border-r border-border/60 flex flex-col justify-between shrink-0 h-full shadow-xl shadow-primary/5 transform transition-transform duration-300 md:relative md:translate-x-0 ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
         <div className="p-4 lg:p-6">
-          <div className="flex items-center justify-center lg:justify-start gap-3 mb-10 pl-1 lg:pl-2">
-            <div className="h-10 w-10 lg:h-12 lg:w-12 flex items-center justify-center shrink-0">
-              <Image src="/icon.png" alt="Logo" width={48} height={48} className="w-full h-full object-contain" />
+          <div className="flex items-center justify-between mb-10 pl-1 lg:pl-2">
+            <div className="flex items-center gap-3">
+              <div className="h-10 w-10 lg:h-12 lg:w-12 flex items-center justify-center shrink-0">
+                <Image src="/icon.png" alt="Logo" width={48} height={48} className="w-full h-full object-contain" />
+              </div>
+              <h2 className="font-bold text-xl text-foreground leading-tight tracking-tight hidden md:block">InfoMasjid</h2>
             </div>
-            <h2 className="font-bold text-xl text-foreground leading-tight tracking-tight hidden lg:block">InfoMasjid</h2>
+            <button onClick={() => setIsSidebarOpen(false)} className="md:hidden text-foreground/70 hover:text-foreground p-1">
+              <X className="h-6 w-6" />
+            </button>
           </div>
 
           <nav className="flex flex-col gap-2">
             <button 
-              onClick={() => setActiveTab("dashboard")}
-              className={`flex items-center justify-center lg:justify-start gap-3 px-3 lg:px-4 py-3 rounded-xl text-sm transition-all cursor-pointer relative group ${activeTab === 'dashboard' ? 'bg-primary/10 text-primary font-bold' : 'text-muted-foreground hover:bg-accent/50 hover:text-foreground'}`}>
-              {activeTab === 'dashboard' && <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-primary rounded-r-md hidden lg:block"></div>}
+              onClick={() => {
+                setActiveTab("dashboard");
+                setIsSidebarOpen(false);
+              }}
+              className={`flex items-center justify-center md:justify-start gap-3 px-3 md:px-4 py-3 rounded-xl text-sm transition-all cursor-pointer relative group ${activeTab === 'dashboard' ? 'bg-primary/10 text-primary font-bold' : 'text-muted-foreground hover:bg-accent/50 hover:text-foreground'}`}>
+              {activeTab === 'dashboard' && <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-primary rounded-r-md hidden md:block"></div>}
               <LayoutDashboard className="h-5 w-5 shrink-0" />
-              <span className="hidden lg:block">Dashboard</span>
+              <span className="hidden md:block">Dashboard</span>
             </button>
             <button 
-              onClick={() => setActiveTab("customers")}
-              className={`flex items-center justify-center lg:justify-start gap-3 px-3 lg:px-4 py-3 rounded-xl text-sm transition-all cursor-pointer relative group ${activeTab === 'customers' ? 'bg-primary/10 text-primary font-bold' : 'text-muted-foreground hover:bg-accent/50 hover:text-foreground'}`}>
-              {activeTab === 'customers' && <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-primary rounded-r-md hidden lg:block"></div>}
+              onClick={() => {
+                setActiveTab("customers");
+                setIsSidebarOpen(false);
+              }}
+              className={`flex items-center justify-center md:justify-start gap-3 px-3 md:px-4 py-3 rounded-xl text-sm transition-all cursor-pointer relative group ${activeTab === 'customers' ? 'bg-primary/10 text-primary font-bold' : 'text-muted-foreground hover:bg-accent/50 hover:text-foreground'}`}>
+              {activeTab === 'customers' && <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-primary rounded-r-md hidden md:block"></div>}
               <Users className="h-5 w-5 shrink-0" />
-              <span className="hidden lg:block">Customers</span>
+              <span className="hidden md:block">Customers</span>
             </button>
 
           </nav>
@@ -198,34 +218,42 @@ export default function SuperAdminPage() {
                 "destructive"
               );
             }}
-            className="flex items-center justify-center lg:justify-start gap-3 px-3 lg:px-4 py-3 rounded-xl text-sm font-medium text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-all w-full"
+            className="flex items-center justify-center md:justify-start gap-3 px-3 md:px-4 py-3 rounded-xl text-sm font-medium text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-all w-full"
           >
             <LogOut className="h-5 w-5 shrink-0" />
-            <span className="hidden lg:block">Log out</span>
+            <span className="hidden md:block">Log out</span>
           </button>
         </div>
       </aside>
 
       {/* 2. MIDDLE CONTENT AREA */}
-      <div className="flex-1 flex flex-col h-screen overflow-hidden relative z-10 bg-muted/10">
+      <div className="flex-1 flex flex-col h-screen overflow-hidden relative z-10 bg-muted/10 w-full">
         
         {/* Top Header */}
-        <header className="h-20 flex items-center justify-between px-8 shrink-0 border-b border-border/30 bg-background/50 backdrop-blur-md">
-          <h1 className="text-2xl font-bold tracking-tight">Dashboard</h1>
+        <header className="h-20 flex items-center justify-between px-4 md:px-8 shrink-0 border-b border-border/30 bg-background/50 backdrop-blur-md">
+          <div className="flex items-center gap-4">
+            <button 
+              onClick={() => setIsSidebarOpen(true)}
+              className="md:hidden p-2 -ml-2 text-foreground/80 hover:bg-muted rounded-xl"
+            >
+              <Menu className="h-6 w-6" />
+            </button>
+            <h1 className="text-xl md:text-2xl font-bold tracking-tight">Dashboard</h1>
+          </div>
           
-          <div className="flex bg-card border border-border rounded-full px-4 py-2 w-64 md:w-96 shadow-sm items-center gap-2">
-            <User className="h-4 w-4 text-muted-foreground" />
+          <div className="flex bg-card border border-border rounded-full px-4 py-2 w-48 md:w-96 shadow-sm items-center gap-2">
+            <User className="h-4 w-4 text-muted-foreground shrink-0" />
             <input type="text" placeholder="Search masjids..." className="bg-transparent border-none outline-none text-sm w-full" />
           </div>
         </header>
 
         {/* Scrollable Content */}
-        <main className="flex-1 overflow-y-auto p-8">
+        <main className="flex-1 overflow-y-auto p-4 md:p-8">
           <div className="max-w-7xl mx-auto flex flex-col gap-8 pb-10">
             
             {/* Top Stat Cards - Show on Dashboard */}
             {activeTab === "dashboard" && (
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6">
               <div className="bg-card p-6 rounded-3xl border border-border/50 shadow-sm flex flex-col justify-between">
                 <div className="flex justify-between items-start mb-4">
                   <span className="text-muted-foreground text-sm font-medium">Total Customers</span>

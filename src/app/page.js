@@ -62,14 +62,14 @@ export default function LandingPage() {
             <a href="#harga" className="hover:text-foreground transition-colors">Harga</a>
           </div>
 
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3 md:gap-4">
             <ThemeToggle />
-            <Link href="/login" className="hidden md:flex text-sm font-bold hover:text-primary transition-colors">Masuk</Link>
+            <Link href="/login" className="flex text-sm font-bold hover:text-primary transition-colors">Masuk</Link>
             <button 
-              onClick={() => router.push("/checkout?pkg=berkah")}
-              className="bg-primary text-primary-foreground font-bold px-5 py-2.5 rounded-full text-sm hover:bg-primary/90 transition-all shadow-lg hover:shadow-xl hover:-translate-y-0.5"
+              onClick={() => router.push("/#harga")}
+              className="bg-primary text-primary-foreground font-bold px-4 py-2 md:px-5 md:py-2.5 rounded-full text-xs md:text-sm hover:bg-primary/90 transition-all shadow-lg hover:shadow-xl hover:-translate-y-0.5"
             >
-              Daftar Sekarang
+              Daftar <span className="hidden md:inline">Sekarang</span>
             </button>
           </div>
         </div>

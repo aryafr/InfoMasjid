@@ -35,7 +35,9 @@ import {
   Lock,
   ArrowRight,
   Copy,
-  ExternalLink
+  ExternalLink,
+  Menu,
+  X
 } from "lucide-react";
 import ThemeToggle from "@/components/ThemeToggle";
 import { 
@@ -167,6 +169,7 @@ export default function AdminPage() {
   const [selectedRenewalPackage, setSelectedRenewalPackage] = useState("berkah");
   const [isExtending, setIsExtending] = useState(false);
   const [isRetryingPayment, setIsRetryingPayment] = useState(false);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [masjidRoot, setMasjidRoot] = useState(null);
   const [settingsForm, setSettingsForm] = useState({
     nama_aplikasi: "",
@@ -647,14 +650,27 @@ export default function AdminPage() {
   return (
     <div className="flex h-screen bg-background text-foreground font-sans overflow-hidden">
       
+      {/* MOBILE SIDEBAR OVERLAY */}
+      {isSidebarOpen && (
+        <div 
+          className="fixed inset-0 bg-background/80 backdrop-blur-sm z-40 md:hidden"
+          onClick={() => setIsSidebarOpen(false)}
+        />
+      )}
+
       {/* SIDEBAR NAVIGATION */}
-      <aside className="w-64 bg-sidebar/40 backdrop-blur-2xl border-r border-border/60 flex flex-col justify-between shrink-0 h-full z-10 shadow-xl shadow-emerald-500/10">
+      <aside className={`fixed inset-y-0 left-0 z-50 w-64 bg-sidebar/40 backdrop-blur-2xl border-r border-border/60 flex flex-col justify-between shrink-0 h-full shadow-xl shadow-emerald-500/10 transform transition-transform duration-300 md:relative md:translate-x-0 ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
         <div className="p-6">
-          <div className="flex items-center gap-3 mb-10 pl-2">
-            <div className="h-14 w-14 flex items-center justify-center shrink-0">
-              <Image src="/icon.png" alt="Logo" width={56} height={56} className="w-full h-full object-contain" />
+          <div className="flex items-center justify-between mb-10 pl-2">
+            <div className="flex items-center gap-3">
+              <div className="h-14 w-14 flex items-center justify-center shrink-0">
+                <Image src="/icon.png" alt="Logo" width={56} height={56} className="w-full h-full object-contain" />
+              </div>
+              <h2 className="font-bold text-lg text-sidebar-foreground leading-tight tracking-tight">InfoMasjid</h2>
             </div>
-            <h2 className="font-bold text-lg text-sidebar-foreground leading-tight tracking-tight">InfoMasjid</h2>
+            <button onClick={() => setIsSidebarOpen(false)} className="md:hidden text-sidebar-foreground/70 hover:text-sidebar-foreground p-1">
+              <X className="h-6 w-6" />
+            </button>
           </div>
 
           <nav className="flex flex-col gap-1.5">
@@ -664,7 +680,10 @@ export default function AdminPage() {
               return (
                 <button
                   key={tab.id}
-                  onClick={() => setActiveTab(tab.id)}
+                  onClick={() => {
+                    setActiveTab(tab.id);
+                    setIsSidebarOpen(false); // Close on mobile after selection
+                  }}
                   className={`flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm transition-all cursor-pointer text-left relative ${
                     isActive 
                       ? "bg-sidebar-primary/10 text-sidebar-primary font-bold" 
@@ -694,7 +713,7 @@ export default function AdminPage() {
       </aside>
 
       {/* MAIN CONTENT WRAPPER */}
-      <div className="flex-1 flex flex-col h-screen overflow-hidden relative">
+      <div className="flex-1 flex flex-col h-screen overflow-hidden relative w-full">
         {renderPendingPaymentOverlay()}
         
         {/* Premium Luxury Background Glows (Mesh Gradient Effect) */}
@@ -703,9 +722,15 @@ export default function AdminPage() {
         <div className="absolute top-[20%] left-[30%] w-[40%] h-[40%] bg-accent/20 rounded-[100%] blur-[140px] pointer-events-none z-0 animate-pulse-soft mix-blend-multiply dark:mix-blend-screen" style={{ animationDelay: '1s' }}></div>
         
         {/* TOP BAR */}
-        <header className="h-20 bg-background/40 backdrop-blur-xl flex items-center justify-between px-8 shrink-0 z-[40] border-b border-border/50 relative">
-          <div className="flex items-center gap-6">
-            <div>
+        <header className="h-20 bg-background/40 backdrop-blur-xl flex items-center justify-between px-4 md:px-8 shrink-0 z-[40] border-b border-border/50 relative">
+          <div className="flex items-center gap-4 md:gap-6">
+            <button 
+              onClick={() => setIsSidebarOpen(true)}
+              className="md:hidden p-2 -ml-2 text-foreground/80 hover:bg-muted rounded-xl"
+            >
+              <Menu className="h-6 w-6" />
+            </button>
+            <div className="hidden sm:block">
               <h1 className="text-xl font-bold text-foreground tracking-tight">
                 {activeTab === 'settings' && "Welcome back, Admin!"}
                 {activeTab === 'murottal' && "Media & Murottal"}
@@ -726,6 +751,18 @@ export default function AdminPage() {
                 {activeTab === 'qris' && "Atur gambar barcode QRIS dan informasi rekening donasi masjid."}
                 {activeTab === 'panduan' && "Pelajari panduan penggunaan aplikasi secara menyeluruh dan mudah."}
               </p>
+            </div>
+            
+            {/* Mobile Header Title (Visible only when title is hidden) */}
+            <div className="sm:hidden font-bold text-foreground text-lg">
+                {activeTab === 'settings' && "Pengaturan"}
+                {activeTab === 'murottal' && "Murottal"}
+                {activeTab === 'jadwal' && "Jadwal Sholat"}
+                {activeTab === 'jumat' && "Jumat"}
+                {activeTab === 'pengumuman' && "Pengumuman"}
+                {activeTab === 'keuangan' && "Keuangan"}
+                {activeTab === 'qris' && "QRIS"}
+                {activeTab === 'panduan' && "Panduan"}
             </div>
             
             {/* Status Alert Badge */}
@@ -861,32 +898,34 @@ export default function AdminPage() {
                   {/* TV LINK SECTION */}
                   <div className="bg-primary/5 p-4 rounded-xl border border-primary/20">
                     <label className="text-sm text-primary font-bold mb-2 block">Link Layar TV Anda</label>
-                    <div className="flex gap-3">
+                    <div className="flex flex-col sm:flex-row gap-3">
                       <input 
                         type="text" 
                         value={tvUrl}
                         readOnly
                         className="flex-1 bg-background border border-primary/20 rounded-xl px-4 py-3 focus:outline-none text-foreground text-sm font-medium"
                       />
-                      <button
-                        type="button"
-                        onClick={() => {
-                          navigator.clipboard.writeText(tvUrl);
-                          setActionStatus({ success: true, message: "Link Layar TV berhasil disalin!" });
-                        }}
-                        className="bg-primary hover:bg-primary/90 text-primary-foreground p-3 rounded-xl transition-all shadow-md flex items-center justify-center gap-2 px-6 font-bold text-sm"
-                      >
-                        <Copy className="w-4 h-4" />
-                        Salin
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => window.open(tvUrl, '_blank')}
-                        className="bg-muted hover:bg-muted/80 text-foreground border border-border p-3 rounded-xl transition-all shadow-sm flex items-center justify-center gap-2 px-6 font-bold text-sm"
-                      >
-                        <ExternalLink className="w-4 h-4" />
-                        Buka
-                      </button>
+                      <div className="flex gap-2">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            navigator.clipboard.writeText(tvUrl);
+                            setActionStatus({ success: true, message: "Link Layar TV berhasil disalin!" });
+                          }}
+                          className="flex-1 sm:flex-none bg-primary hover:bg-primary/90 text-primary-foreground p-3 rounded-xl transition-all shadow-md flex items-center justify-center gap-2 px-6 font-bold text-sm"
+                        >
+                          <Copy className="w-4 h-4" />
+                          Salin
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => window.open(tvUrl, '_blank')}
+                          className="flex-1 sm:flex-none bg-muted hover:bg-muted/80 text-foreground border border-border p-3 rounded-xl transition-all shadow-sm flex items-center justify-center gap-2 px-6 font-bold text-sm"
+                        >
+                          <ExternalLink className="w-4 h-4" />
+                          Buka
+                        </button>
+                      </div>
                     </div>
                     <p className="text-xs text-muted-foreground mt-2 flex gap-1 items-center">
                       <Info className="h-3.5 w-3.5 shrink-0" />
