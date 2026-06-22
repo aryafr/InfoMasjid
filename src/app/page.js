@@ -224,7 +224,7 @@ export default function LandingPage() {
                 {pricing?.is_discount_active ? (
                   <>
                     <div className="flex items-end gap-1">
-                      <span className="text-5xl font-extrabold tracking-tight">Rp {Math.round(pricing.berkah.discounted_price / 12 / 1000)}rb</span>
+                      <span className="text-5xl font-extrabold tracking-tight">Rp {Math.floor(pricing.berkah.discounted_price / 12 / 1000)}rb</span>
                       <span className="text-muted-foreground font-medium mb-1">/ bulan</span>
                     </div>
                     <div className="text-sm font-medium mt-2 flex items-center gap-2">
@@ -235,7 +235,7 @@ export default function LandingPage() {
                 ) : (
                   <>
                     <div className="flex items-end gap-1">
-                      <span className="text-5xl font-extrabold tracking-tight">Rp {pricing?.berkah?.original_price ? Math.round(pricing.berkah.original_price / 12 / 1000) : 20}rb</span>
+                      <span className="text-5xl font-extrabold tracking-tight">Rp {pricing?.berkah?.original_price ? Math.floor(pricing.berkah.original_price / 12 / 1000) : 20}rb</span>
                       <span className="text-muted-foreground font-medium mb-1">/ bulan</span>
                     </div>
                     <div className="text-sm text-primary font-medium mt-2">
@@ -281,7 +281,7 @@ export default function LandingPage() {
                 {pricing?.is_discount_active ? (
                   <>
                     <div className="flex items-end gap-1">
-                      <span className="text-5xl font-extrabold tracking-tight text-foreground">Rp {Math.round(pricing.premium.discounted_price / 12 / 1000)}rb</span>
+                      <span className="text-5xl font-extrabold tracking-tight text-foreground">Rp {Math.floor(pricing.premium.discounted_price / 12 / 1000)}rb</span>
                       <span className="text-foreground/70 font-medium mb-1">/ bulan</span>
                     </div>
                     <div className="text-sm font-medium mt-2 flex items-center gap-2">
@@ -292,7 +292,7 @@ export default function LandingPage() {
                 ) : (
                   <>
                     <div className="flex items-end gap-1">
-                      <span className="text-5xl font-extrabold tracking-tight text-foreground">Rp {pricing?.premium?.original_price ? Math.round(pricing.premium.original_price / 12 / 1000) : 45}rb</span>
+                      <span className="text-5xl font-extrabold tracking-tight text-foreground">Rp {pricing?.premium?.original_price ? Math.floor(pricing.premium.original_price / 12 / 1000) : 45}rb</span>
                       <span className="text-foreground/70 font-medium mb-1">/ bulan</span>
                     </div>
                     <div className="text-sm text-primary font-bold mt-2">

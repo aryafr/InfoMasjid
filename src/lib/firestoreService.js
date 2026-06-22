@@ -519,7 +519,10 @@ export function subscribeToGlobalPricing(callback) {
 }
 
 export async function updateGlobalPricing(data) {
-  if (isMockFirebase) return true;
+  if (isMockFirebase) {
+    setLocalData('configs/pricing', data);
+    return true;
+  }
   try {
     const ref = doc(db, 'configs', 'pricing');
     await setDoc(ref, data, { merge: true });
