@@ -208,6 +208,12 @@ export default function AdminPage() {
   });
   const [editingKeuangan, setEditingKeuangan] = useState(null);
 
+  // City Search State for Jadwal Sholat
+  const [citySearchTerm, setCitySearchTerm] = useState("");
+  const [citySuggestions, setCitySuggestions] = useState([]);
+  const [showCityDropdown, setShowCityDropdown] = useState(false);
+  const [isSearchingCity, setIsSearchingCity] = useState(false);
+
   // 1. Auth Listener
   useEffect(() => {
     if (isMockFirebase) {
@@ -336,6 +342,34 @@ export default function AdminPage() {
       unsubRoot();
     };
   }, [isLoggedIn, masjidId]);
+
+  // City Autocomplete Effect
+  useEffect(() => {
+    const delayDebounceFn = setTimeout(async () => {
+      if (citySearchTerm.length > 2) {
+        setIsSearchingCity(true);
+        try {
+          const res = await fetch(`https://api.myquran.com/v2/sholat/kota/cari/${citySearchTerm}`);
+          const data = await res.json();
+          if (data.status && data.data) {
+            setCitySuggestions(data.data);
+            setShowCityDropdown(true);
+          } else {
+            setCitySuggestions([]);
+          }
+        } catch (err) {
+          console.error(err);
+        } finally {
+          setIsSearchingCity(false);
+        }
+      } else {
+        setCitySuggestions([]);
+        setShowCityDropdown(false);
+      }
+    }, 500);
+
+    return () => clearTimeout(delayDebounceFn);
+  }, [citySearchTerm]);
 
   // Set alert timeouts
   useEffect(() => {
@@ -1369,13 +1403,45 @@ export default function AdminPage() {
                       <input 
                         type="text" 
                         placeholder="Cari Kota..."
-                        value={settingsForm.auto_update?.city || ""}
-                        onChange={(e) => setSettingsForm({
-                          ...settingsForm, 
-                          auto_update: { ...settingsForm.auto_update, city: e.target.value }
-                        })}
-                        className="w-48 bg-input/50 border border-border rounded-xl pl-9 pr-4 py-2 text-sm focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary text-foreground"
+                        value={citySearchTerm || settingsForm.auto_update?.city || ""}
+                        onChange={(e) => {
+                          setCitySearchTerm(e.target.value);
+                          setSettingsForm({
+                            ...settingsForm, 
+                            auto_update: { ...settingsForm.auto_update, city: e.target.value }
+                          });
+                        }}
+                        onFocus={() => {
+                          if (citySuggestions.length > 0) setShowCityDropdown(true);
+                        }}
+                        onBlur={() => setTimeout(() => setShowCityDropdown(false), 200)}
+                        className="w-48 bg-input/50 border border-border rounded-xl pl-9 pr-8 py-2 text-sm focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary text-foreground"
                       />
+                      {isSearchingCity && (
+                        <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 animate-spin text-muted-foreground" />
+                      )}
+                      
+                      {showCityDropdown && citySuggestions.length > 0 && (
+                        <ul className="absolute z-50 w-full mt-1 max-h-48 overflow-y-auto bg-card border border-border rounded-xl shadow-lg">
+                          {citySuggestions.map((city) => (
+                            <li 
+                              key={city.id}
+                              onClick={() => {
+                                const formattedCity = city.lokasi.toLowerCase().split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
+                                setSettingsForm({
+                                  ...settingsForm, 
+                                  auto_update: { ...settingsForm.auto_update, city: formattedCity }
+                                });
+                                setCitySearchTerm(formattedCity);
+                                setShowCityDropdown(false);
+                              }}
+                              className="px-4 py-3 hover:bg-accent hover:text-accent-foreground cursor-pointer text-sm font-medium border-b border-border/50 last:border-0"
+                            >
+                              {city.lokasi}
+                            </li>
+                          ))}
+                        </ul>
+                      )}
                     </div>
                     <button 
                       onClick={handleForceSync}
