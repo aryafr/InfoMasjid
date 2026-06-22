@@ -210,13 +210,19 @@ export default function AdminPage() {
 
   // 1. Auth Listener
   useEffect(() => {
-    if (isMockFirebase || masjidId === 'demo-masjid') {
+    if (isMockFirebase) {
       const isMockLoggedIn = localStorage.getItem(`mock_admin_logged_in_${masjidId}`);
       if (isMockLoggedIn === "true") {
         setIsLoggedIn(true);
       } else {
         setIsLoggedIn(false);
       }
+      setAuthLoading(false);
+      return;
+    }
+
+    if (masjidId === 'demo-masjid') {
+      setIsLoggedIn(true);
       setAuthLoading(false);
       return;
     }
