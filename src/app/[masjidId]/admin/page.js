@@ -146,6 +146,15 @@ export default function AdminPage() {
     setModalConfig({ ...modalConfig, isOpen: false });
   };
 
+  const getRemainingDays = () => {
+    if (!masjidRoot?.created_at) return 0;
+    const createdAt = new Date(masjidRoot.created_at);
+    const expireAt = new Date(createdAt.getTime() + (365 * 24 * 60 * 60 * 1000));
+    const now = new Date();
+    const diffTime = Math.max(0, expireAt - now);
+    return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+  };
+
   // Form States
   const [masjidRoot, setMasjidRoot] = useState(null);
   const [settingsForm, setSettingsForm] = useState({
@@ -602,7 +611,7 @@ export default function AdminPage() {
           <div className="flex items-center gap-3">
             <ThemeToggle />
             <button 
-              onClick={() => showAlert("Informasi Sistem", "Update pengembangan fitur terbaru (Version 1.0) telah diterapkan. Masa tenggang langganan aktif: 30 Hari.")}
+              onClick={() => showAlert("Informasi Sistem", `Update pengembangan fitur terbaru (Version 1.0) telah diterapkan. Masa tenggang langganan aktif: ${getRemainingDays()} Hari.`)}
               className="p-2 border border-border rounded-full bg-card text-muted-foreground hover:bg-accent hover:text-foreground shadow-sm transition-colors cursor-pointer relative"
               title="Notifikasi"
             >
@@ -690,6 +699,19 @@ export default function AdminPage() {
               {/* Form Settings */}
               <div className="bg-card/20 backdrop-blur-3xl border border-border/60 shadow-xl shadow-emerald-500/30 rounded-3xl p-10 shadow-sm">
                 <h2 className="text-lg font-bold text-foreground mb-6 border-b border-border pb-4">Pengaturan Global App</h2>
+                
+                {/* Subscription Reminder */}
+                <div className="bg-orange-500/10 border border-orange-500/20 text-orange-600 dark:text-orange-400 p-4 rounded-xl mb-6 flex items-start gap-3">
+                  <AlertTriangle className="h-5 w-5 shrink-0 mt-0.5" />
+                  <div>
+                    <h4 className="font-bold text-sm">Masa Aktif Layanan</h4>
+                    <p className="text-xs mt-1">
+                      Sisa masa aktif langganan aplikasi InfoMasjid Anda adalah <strong>{getRemainingDays()} Hari</strong>. 
+                      Harap perpanjang sebelum masa berlaku habis agar layar TV tetap dapat beroperasi.
+                    </p>
+                  </div>
+                </div>
+
                 <form onSubmit={handleSettingsSubmit} className="flex flex-col gap-6">
                   
                   {/* TV LINK SECTION */}

@@ -59,34 +59,6 @@ function CheckoutContent() {
       return;
     }
 
-    setLocating(true);
-    navigator.geolocation.getCurrentPosition(async (position) => {
-      try {
-        const { latitude, longitude } = position.coords;
-        // Gunakan Nominatim OpenStreetMap untuk Reverse Geocoding gratis
-        const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`);
-        const data = await res.json();
-        
-        // Ambil nama kota/kabupaten
-        const city = data.address.city || data.address.town || data.address.county || data.address.state;
-        if (city) {
-          // Bersihkan kata "Kabupaten" atau "Kota" agar lebih rapi untuk API AlAdhan
-          let cleanCity = city.replace(/Kabupaten /g, "").replace(/Kota /g, "");
-          setFormData({ ...formData, city: cleanCity });
-        } else {
-          setCustomAlert({ show: true, message: "Gagal menemukan nama kota dari lokasi Anda.", type: "error", onConfirm: null });
-        }
-      } catch (error) {
-        console.error("Error detecting location:", error);
-        setCustomAlert({ show: true, message: "Gagal mendeteksi lokasi.", type: "error", onConfirm: null });
-      } finally {
-        setLocating(false);
-      }
-    }, (error) => {
-      setLocating(false);
-      setCustomAlert({ show: true, message: "Izin lokasi ditolak atau gagal mengambil lokasi.", type: "error", onConfirm: null });
-    });
-  };
 
   const handleRegisterAndPay = async (e) => {
     e.preventDefault();
@@ -317,26 +289,16 @@ function CheckoutContent() {
 
             <div>
               <label className="text-sm font-bold text-foreground mb-1 block">Kota / Kabupaten (Untuk Sinkronisasi Jadwal)</label>
-              <div className="relative flex gap-2">
-                <div className="relative flex-1">
-                  <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-                  <input 
-                    type="text" 
-                    required
-                    placeholder="Ketik nama kota..."
-                    value={formData.city}
-                    onChange={(e) => setFormData({...formData, city: e.target.value})}
-                    className="w-full bg-background border border-border rounded-xl pl-10 pr-4 py-3 focus:outline-none focus:ring-2 focus:ring-primary font-medium"
-                  />
-                </div>
-                <button 
-                  type="button"
-                  onClick={detectLocation}
-                  disabled={locating}
-                  className="bg-primary/10 text-primary font-bold px-4 py-3 rounded-xl hover:bg-primary/20 transition-colors flex items-center justify-center min-w-[140px]"
-                >
-                  {locating ? "Melacak..." : "Deteksi GPS"}
-                </button>
+              <div className="relative">
+                <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                <input 
+                  type="text" 
+                  required
+                  placeholder="Ketik nama kota..."
+                  value={formData.city}
+                  onChange={(e) => setFormData({...formData, city: e.target.value})}
+                  className="w-full bg-background border border-border rounded-xl pl-10 pr-4 py-3 focus:outline-none focus:ring-2 focus:ring-primary font-medium"
+                />
               </div>
               <p className="text-xs text-muted-foreground mt-1">Anda bebas mengetik kota apa saja di seluruh dunia.</p>
             </div>
