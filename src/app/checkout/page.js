@@ -24,9 +24,12 @@ function CheckoutContent() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [customAlert, setCustomAlert] = useState({ show: false, message: "", type: "info", onConfirm: null });
-  const [cities, setCities] = useState([]);
-  const [searchCity, setSearchCity] = useState("");
-  const [locating, setLocating] = useState(false);
+
+  // Autocomplete state
+  const [citySearchTerm, setCitySearchTerm] = useState("");
+  const [citySuggestions, setCitySuggestions] = useState([]);
+  const [isSearchingCity, setIsSearchingCity] = useState(false);
+  const [showCityDropdown, setShowCityDropdown] = useState(false);
 
   const price = pkg === "premium" ? 550000 : 250000;
   const packageName = pkg === "premium" ? "Paket Premium (1 Tahun)" : "Paket Berkah (1 Tahun)";
@@ -50,9 +53,33 @@ function CheckoutContent() {
     };
   }, []);
 
-  // Fetch Cities (simple mock or real API)
-  // We removed the hardcoded list to avoid confusing the user.
+  // Fetch Cities Autocomplete
+  useEffect(() => {
+    const delayDebounceFn = setTimeout(async () => {
+      if (citySearchTerm.length > 2) {
+        setIsSearchingCity(true);
+        try {
+          const res = await fetch(`https://api.myquran.com/v2/sholat/kota/cari/${citySearchTerm}`);
+          const data = await res.json();
+          if (data.status && data.data) {
+            setCitySuggestions(data.data);
+            setShowCityDropdown(true);
+          } else {
+            setCitySuggestions([]);
+          }
+        } catch (err) {
+          console.error(err);
+        } finally {
+          setIsSearchingCity(false);
+        }
+      } else {
+        setCitySuggestions([]);
+        setShowCityDropdown(false);
+      }
+    }, 500);
 
+    return () => clearTimeout(delayDebounceFn);
+  }, [citySearchTerm]);
 
   const handleRegisterAndPay = async (e) => {
     e.preventDefault();
@@ -281,20 +308,50 @@ function CheckoutContent() {
               </div>
             </div>
 
-            <div>
+            <div className="relative">
               <label className="text-sm font-bold text-foreground mb-1 block">Kota / Kabupaten (Untuk Sinkronisasi Jadwal)</label>
               <div className="relative">
                 <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
                 <input 
                   type="text" 
                   required
-                  placeholder="Ketik nama kota..."
+                  placeholder="Ketik nama kota... (misal: Jakarta)"
                   value={formData.city}
-                  onChange={(e) => setFormData({...formData, city: e.target.value})}
-                  className="w-full bg-background border border-border rounded-xl pl-10 pr-4 py-3 focus:outline-none focus:ring-2 focus:ring-primary font-medium"
+                  onChange={(e) => {
+                    setFormData({...formData, city: e.target.value});
+                    setCitySearchTerm(e.target.value);
+                  }}
+                  onFocus={() => {
+                    if (citySuggestions.length > 0) setShowCityDropdown(true);
+                  }}
+                  onBlur={() => setTimeout(() => setShowCityDropdown(false), 200)}
+                  className="w-full bg-background border border-border rounded-xl pl-10 pr-10 py-3 focus:outline-none focus:ring-2 focus:ring-primary font-medium"
                 />
+                {isSearchingCity && (
+                  <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 animate-spin text-muted-foreground" />
+                )}
               </div>
-              <p className="text-xs text-muted-foreground mt-1">Anda bebas mengetik kota apa saja di seluruh dunia.</p>
+              
+              {showCityDropdown && citySuggestions.length > 0 && (
+                <ul className="absolute z-50 w-full mt-1 max-h-48 overflow-y-auto bg-card border border-border rounded-xl shadow-lg">
+                  {citySuggestions.map((city) => (
+                    <li 
+                      key={city.id}
+                      onClick={() => {
+                        // Title Case conversion for nicer display
+                        const formattedCity = city.lokasi.toLowerCase().split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
+                        setFormData({...formData, city: formattedCity});
+                        setCitySearchTerm(formattedCity);
+                        setShowCityDropdown(false);
+                      }}
+                      className="px-4 py-3 hover:bg-accent hover:text-accent-foreground cursor-pointer text-sm font-medium border-b border-border/50 last:border-0"
+                    >
+                      {city.lokasi}
+                    </li>
+                  ))}
+                </ul>
+              )}
+              <p className="text-xs text-muted-foreground mt-2">Pilih dari daftar (autocomplete) agar sinkronisasi jadwal sholat 100% akurat.</p>
             </div>
 
             <div>
