@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import midtransClient from "midtrans-client";
-import { adminDb } from '@/lib/firebaseAdmin';
+import { db } from '@/lib/firebase';
+import { doc, getDoc } from 'firebase/firestore';
 
 export async function POST(req) {
   try {
@@ -16,39 +17,49 @@ export async function POST(req) {
     }
 
     // 2. Fetch Global Pricing
-    const pricingDoc = await adminDb.collection('configs').doc('pricing').get();
     let basePrice = packageType === "premium" ? 550000 : 250000;
     
-    if (pricingDoc.exists) {
-      const pricingData = pricingDoc.data();
-      const pkgPricing = pricingData[packageType] || {};
-      basePrice = pkgPricing.original_price || basePrice;
-      if (pricingData.is_discount_active && pkgPricing.discounted_price) {
-        basePrice = pkgPricing.discounted_price;
+    try {
+      if (db) {
+        const pricingDoc = await getDoc(doc(db, 'configs', 'pricing'));
+        if (pricingDoc.exists()) {
+          const pricingData = pricingDoc.data();
+          const pkgPricing = pricingData[packageType] || {};
+          basePrice = pkgPricing.original_price || basePrice;
+          if (pricingData.is_discount_active && pkgPricing.discounted_price) {
+            basePrice = pkgPricing.discounted_price;
+          }
+        }
       }
+    } catch (e) {
+      console.warn("Could not fetch pricing configs:", e);
     }
 
     let finalPrice = basePrice;
     let discountAmount = 0;
 
     // 3. Validate Voucher (Server-side Enforcement)
-    if (voucherCode) {
-      const voucherDoc = await adminDb.collection('vouchers').doc(voucherCode.toUpperCase()).get();
-      if (voucherDoc.exists) {
-        const vData = voucherDoc.data();
-        const isValid = vData.is_active && 
-                        (!vData.valid_until || new Date() <= new Date(vData.valid_until)) && 
-                        (!vData.max_uses || (vData.used_count || 0) < vData.max_uses);
-        
-        if (isValid) {
-          if (vData.discount_type === 'percentage') {
-            discountAmount = (basePrice * vData.discount_value) / 100;
-          } else if (vData.discount_type === 'fixed') {
-            discountAmount = vData.discount_value;
+    try {
+      if (voucherCode && db) {
+        const voucherDoc = await getDoc(doc(db, 'vouchers', voucherCode.toUpperCase()));
+        if (voucherDoc.exists()) {
+          const vData = voucherDoc.data();
+          const isValid = vData.is_active && 
+                          (!vData.valid_until || new Date() <= new Date(vData.valid_until)) && 
+                          (!vData.max_uses || (vData.used_count || 0) < vData.max_uses);
+          
+          if (isValid) {
+            if (vData.discount_type === 'percentage') {
+              discountAmount = (basePrice * vData.discount_value) / 100;
+            } else if (vData.discount_type === 'fixed') {
+              discountAmount = vData.discount_value;
+            }
+            finalPrice = Math.max(0, basePrice - discountAmount);
           }
-          finalPrice = Math.max(0, basePrice - discountAmount);
         }
       }
+    } catch (e) {
+      console.warn("Could not validate voucher:", e);
     }
 
     // 4. Validate Gross Amount against Final Price

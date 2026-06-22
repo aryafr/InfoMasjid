@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
-import { adminDb } from '@/lib/firebaseAdmin';
+import { db } from '@/lib/firebase';
+import { doc, getDoc } from 'firebase/firestore';
 
 export async function POST(request) {
   try {
@@ -9,9 +10,13 @@ export async function POST(request) {
       return NextResponse.json({ valid: false, message: "Kode voucher tidak boleh kosong." }, { status: 400 });
     }
 
-    const voucherDoc = await adminDb.collection('vouchers').doc(code.toUpperCase()).get();
+    if (!db) {
+      return NextResponse.json({ valid: false, message: "Koneksi database tidak tersedia." }, { status: 500 });
+    }
 
-    if (!voucherDoc.exists) {
+    const voucherDoc = await getDoc(doc(db, 'vouchers', code.toUpperCase()));
+
+    if (!voucherDoc.exists()) {
       return NextResponse.json({ valid: false, message: "Kode voucher tidak valid atau tidak ditemukan." }, { status: 404 });
     }
 
