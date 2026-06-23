@@ -98,6 +98,18 @@ export default function MasjidDisplay() {
   // Realtime States
   const [settings, setSettings] = useState(null);
   const [jadwal, setJadwal] = useState(null);
+  const [windowScale, setWindowScale] = useState(1);
+
+  useEffect(() => {
+    const handleResize = () => {
+      const scaleX = window.innerWidth / 1920;
+      const scaleY = window.innerHeight / 1080;
+      setWindowScale(Math.min(scaleX, scaleY));
+    };
+    handleResize();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
   const [sholatJumat, setSholatJumat] = useState(null);
   const [pengumuman, setPengumuman] = useState([]);
   const [keuangan, setKeuangan] = useState([]);
@@ -191,7 +203,7 @@ export default function MasjidDisplay() {
     let targetSeconds = currentRealSeconds;
     if (mode === 'menjelang') targetSeconds = targetPrayerSeconds - 10;
     if (mode === 'adzan') targetSeconds = targetPrayerSeconds;
-    if (mode === 'iqamah') targetSeconds = targetPrayerSeconds + 60;
+    if (mode === 'iqamah') targetSeconds = targetPrayerSeconds + jedaIqamah - 10;
     if (mode === 'sholat') targetSeconds = targetPrayerSeconds + jedaIqamah;
     
     setTimeOffset(targetSeconds - currentRealSeconds);
@@ -589,8 +601,30 @@ export default function MasjidDisplay() {
   const totalPengeluaran = (keuangan || []).reduce((sum, item) => sum + Number(item.pengeluaran || 0), 0);
   const saldo = totalPemasukan - totalPengeluaran;
 
+  // Calculate breakdown for summary
+  const breakdownPemasukan = (keuangan || []).filter(i => i.pemasukan > 0).reduce((acc, curr) => {
+    acc[curr.kategori || "Lainnya"] = (acc[curr.kategori || "Lainnya"] || 0) + Number(curr.pemasukan);
+    return acc;
+  }, {});
+  const breakdownPengeluaran = (keuangan || []).filter(i => i.pengeluaran > 0).reduce((acc, curr) => {
+    acc[curr.kategori || "Lainnya"] = (acc[curr.kategori || "Lainnya"] || 0) + Number(curr.pengeluaran);
+    return acc;
+  }, {});
+  
+  const sortedPemasukanKeys = Object.keys(breakdownPemasukan).sort((a, b) => breakdownPemasukan[b] - breakdownPemasukan[a]).slice(0, 3);
+  const sortedPengeluaranKeys = Object.keys(breakdownPengeluaran).sort((a, b) => breakdownPengeluaran[b] - breakdownPengeluaran[a]).slice(0, 3);
+
   return (
-    <div className={`relative flex flex-col flex-1 w-full h-full h-screen bg-background text-foreground p-6 overflow-hidden font-sans ${settings?.tema || 'theme-emerald'}`}>
+    <div className="w-screen h-screen overflow-hidden flex items-center justify-center bg-black">
+      <div 
+        style={{ 
+          width: '1920px', 
+          height: '1080px', 
+          transform: `scale(${windowScale})`, 
+          transformOrigin: 'center center' 
+        }}
+        className={`relative shrink-0 flex flex-col bg-background text-foreground p-6 overflow-hidden font-sans ${settings?.tema || 'theme-emerald'}`}
+      >
       
       {/* Fullscreen Toggle */}
       <button 
@@ -610,7 +644,7 @@ export default function MasjidDisplay() {
 
       {/* SHOLAT / IQAMAH / ADZAN OVERLAYS */}
       {(isMenjelangSholat || isAdzanMode || isIqamahMode || isSholatMode) && (
-        <div className={`fixed inset-0 z-[100] flex flex-col items-center justify-center transition-all duration-1000 ${
+        <div className={`absolute inset-0 z-[100] flex flex-col items-center justify-center transition-all duration-1000 ${
           isSholatMode
             ? "bg-black text-white" 
             : "bg-background text-foreground"
@@ -991,7 +1025,14 @@ export default function MasjidDisplay() {
                     {(keuangan || []).slice(0, 4).map((item, index) => (
                       <tr key={item.id} className={`flex w-full items-center transition-colors flex-1 ${index % 2 === 1 ? 'bg-muted/30' : 'bg-transparent'}`}>
                         <td className="p-6 w-[15%] text-foreground/70 font-mono font-bold tabular-nums">{item.tanggal}</td>
-                        <td className="p-6 w-[45%] font-bold text-foreground line-clamp-2 leading-snug">{item.deskripsi}</td>
+                        <td className="p-6 w-[45%] font-bold text-foreground flex flex-col justify-center items-start gap-2 h-full">
+                          <span className="text-xl line-clamp-1 leading-snug">{item.deskripsi}</span>
+                          {item.kategori && (
+                            <span className="text-sm font-black uppercase tracking-widest px-3 py-1 bg-secondary/30 text-secondary-foreground rounded-lg border border-secondary/50 inline-block mt-1">
+                              {item.kategori}
+                            </span>
+                          )}
+                        </td>
                         <td className="p-6 w-[20%] text-right text-primary font-black font-mono tabular-nums tracking-tight">
                           {item.pemasukan ? `Rp ${Number(item.pemasukan).toLocaleString("id-ID")}` : "-"}
                         </td>
@@ -1111,28 +1152,62 @@ export default function MasjidDisplay() {
               <div className="grid grid-cols-3 gap-8 w-full mt-8">
                 
                 {/* Pemasukan */}
-                <div className="bg-card/20 backdrop-blur-3xl border-2 border-border/60 rounded-[3rem] p-8 flex flex-col justify-between items-center text-center shadow-xl shadow-emerald-500/30 min-h-[300px]">
-                  <div className="p-6 bg-primary/10 border-4 border-primary/20 rounded-full text-primary shadow-inner">
-                    <TrendingUp className="h-16 w-16" />
+                <div className="bg-card/20 backdrop-blur-3xl border-2 border-border/60 rounded-[3rem] p-8 flex flex-col items-center text-center shadow-xl shadow-emerald-500/30 min-h-[300px]">
+                  <div className="p-4 bg-primary/10 border-4 border-primary/20 rounded-full text-primary shadow-inner mb-4">
+                    <TrendingUp className="h-10 w-10" />
                   </div>
-                  <div className="mt-4">
-                    <p className="text-foreground/70 font-black uppercase tracking-widest text-lg">Total Pemasukan</p>
-                    <p className="text-3xl font-mono font-black text-primary mt-2 tracking-tighter tabular-nums drop-shadow-sm">
+                  <div className="w-full">
+                    <p className="text-foreground/70 font-black uppercase tracking-widest text-base">Total Pemasukan</p>
+                    <p className="text-4xl font-mono font-black text-primary mt-1 tracking-tighter tabular-nums drop-shadow-sm pb-4 border-b border-border/50">
                       Rp {totalPemasukan.toLocaleString("id-ID")}
                     </p>
+                    <div className="mt-4 flex flex-col gap-3 w-full">
+                      {sortedPemasukanKeys.map(cat => {
+                        const amount = breakdownPemasukan[cat];
+                        const pct = totalPemasukan > 0 ? (amount / totalPemasukan) * 100 : 0;
+                        return (
+                          <div key={cat} className="flex flex-col gap-1 w-full text-left">
+                            <div className="flex justify-between text-xs font-bold text-foreground/80">
+                              <span className="truncate pr-2">{cat}</span>
+                              <span className="shrink-0 font-mono text-primary">Rp {amount.toLocaleString("id-ID")}</span>
+                            </div>
+                            <div className="w-full bg-muted rounded-full h-2 overflow-hidden">
+                              <div className="bg-primary h-full rounded-full" style={{ width: `${pct}%` }}></div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
                   </div>
                 </div>
 
                 {/* Pengeluaran */}
-                <div className="bg-card/20 backdrop-blur-3xl border-2 border-border/60 rounded-[3rem] p-8 flex flex-col justify-between items-center text-center shadow-xl shadow-emerald-500/30 min-h-[300px]">
-                  <div className="p-6 bg-destructive/10 border-4 border-destructive/20 rounded-full text-destructive shadow-inner">
-                    <TrendingDown className="h-16 w-16" />
+                <div className="bg-card/20 backdrop-blur-3xl border-2 border-border/60 rounded-[3rem] p-8 flex flex-col items-center text-center shadow-xl shadow-emerald-500/30 min-h-[300px]">
+                  <div className="p-4 bg-destructive/10 border-4 border-destructive/20 rounded-full text-destructive shadow-inner mb-4">
+                    <TrendingDown className="h-10 w-10" />
                   </div>
-                  <div className="mt-4">
-                    <p className="text-foreground/70 font-black uppercase tracking-widest text-lg">Total Pengeluaran</p>
-                    <p className="text-3xl font-mono font-black text-destructive mt-2 tracking-tighter tabular-nums drop-shadow-sm">
+                  <div className="w-full">
+                    <p className="text-foreground/70 font-black uppercase tracking-widest text-base">Total Pengeluaran</p>
+                    <p className="text-4xl font-mono font-black text-destructive mt-1 tracking-tighter tabular-nums drop-shadow-sm pb-4 border-b border-border/50">
                       Rp {totalPengeluaran.toLocaleString("id-ID")}
                     </p>
+                    <div className="mt-4 flex flex-col gap-3 w-full">
+                      {sortedPengeluaranKeys.map(cat => {
+                        const amount = breakdownPengeluaran[cat];
+                        const pct = totalPengeluaran > 0 ? (amount / totalPengeluaran) * 100 : 0;
+                        return (
+                          <div key={cat} className="flex flex-col gap-1 w-full text-left">
+                            <div className="flex justify-between text-xs font-bold text-foreground/80">
+                              <span className="truncate pr-2">{cat}</span>
+                              <span className="shrink-0 font-mono text-destructive">Rp {amount.toLocaleString("id-ID")}</span>
+                            </div>
+                            <div className="w-full bg-muted rounded-full h-2 overflow-hidden">
+                              <div className="bg-destructive h-full rounded-full" style={{ width: `${pct}%` }}></div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
                   </div>
                 </div>
 
@@ -1383,7 +1458,7 @@ export default function MasjidDisplay() {
 
       {/* DEMO SIMULATION CONTROLS */}
       {masjidId === 'demo-masjid' && (
-        <div className="fixed bottom-24 right-8 z-50 bg-background/90 backdrop-blur-md border-2 border-primary/50 p-4 rounded-2xl shadow-2xl flex flex-col gap-3 opacity-20 hover:opacity-100 transition-all duration-500 transform hover:scale-105 hover:-translate-y-2 group">
+        <div className="absolute bottom-24 right-8 z-[200] bg-background/90 backdrop-blur-md border-2 border-primary/50 p-4 rounded-2xl shadow-2xl flex flex-col gap-3 opacity-20 hover:opacity-100 transition-all duration-500 transform hover:scale-105 hover:-translate-y-2 group pointer-events-auto">
           <p className="text-[11px] font-black text-primary uppercase text-center tracking-widest flex items-center justify-center gap-2">
             <Settings className="w-3.5 h-3.5 animate-spin-slow" />
             Tes Animasi TV
@@ -1396,6 +1471,7 @@ export default function MasjidDisplay() {
         </div>
       )}
 
+    </div>
     </div>
   );
 }

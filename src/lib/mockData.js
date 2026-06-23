@@ -109,11 +109,13 @@ export const defaultPengumuman = [
 ];
 
 export const defaultKeuangan = [
-  { id: "1", tanggal: "2026-06-15", deskripsi: "Infak Jumat Berkah (15 Juni)", kategori: "Infak", pemasukan: 4850000, pengeluaran: 0 },
-  { id: "2", tanggal: "2026-06-16", deskripsi: "Pembayaran Tagihan Listrik & Air", kategori: "Utilitas", pemasukan: 0, pengeluaran: 1250000 },
-  { id: "3", tanggal: "2026-06-17", deskripsi: "Donasi Hamba Allah untuk Sound System", kategori: "Donatur", pemasukan: 5000000, pengeluaran: 0 },
-  { id: "4", tanggal: "2026-06-18", deskripsi: "Pembelian Alat Kebersihan & Desinfektan", kategori: "Operasional", pemasukan: 0, pengeluaran: 350000 },
-  { id: "5", tanggal: "2026-06-19", deskripsi: "Infak Kotak Amal Masjid", kategori: "Infak", pemasukan: 1240000, pengeluaran: 0 }
+  { id: "1", tanggal: "2026-06-15", deskripsi: "Infak Jumat Berkah (15 Juni)", kategori: "Infak Jumat", pemasukan: 4850000, pengeluaran: 0 },
+  { id: "2", tanggal: "2026-06-16", deskripsi: "Pembayaran Tagihan Listrik PLN & PDAM", kategori: "Utilitas (Listrik/Air)", pemasukan: 0, pengeluaran: 1250000 },
+  { id: "3", tanggal: "2026-06-17", deskripsi: "Donasi Hamba Allah untuk Sound System", kategori: "Donatur Tetap", pemasukan: 5000000, pengeluaran: 0 },
+  { id: "4", tanggal: "2026-06-18", deskripsi: "Pembelian Alat Kebersihan & Desinfektan", kategori: "Operasional & Pemeliharaan", pemasukan: 0, pengeluaran: 350000 },
+  { id: "5", tanggal: "2026-06-19", deskripsi: "Infak Kotak Amal Harian", kategori: "Infak Harian / Kotak Amal", pemasukan: 1240000, pengeluaran: 0 },
+  { id: "6", tanggal: "2026-06-20", deskripsi: "Gaji Petugas Kebersihan / Marbot", kategori: "Gaji Imam / Marbot / Pegawai", pemasukan: 0, pengeluaran: 1500000 },
+  { id: "7", tanggal: "2026-06-21", deskripsi: "Konsumsi Kajian Rutin Ahad Subuh", kategori: "Kajian, Dakwah & Pendidikan", pemasukan: 0, pengeluaran: 450000 }
 ];
 
 export const defaultQris = {

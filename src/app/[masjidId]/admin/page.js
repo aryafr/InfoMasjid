@@ -204,8 +204,9 @@ export default function AdminPage() {
   // Inputs for new items
   const [newPengumuman, setNewPengumuman] = useState({ isi: "", tanggal: "" });
   const [newKeuangan, setNewKeuangan] = useState({
-    deskripsi: "", kategori: "Infak", pemasukan: 0, pengeluaran: 0, tanggal: ""
+    deskripsi: "", kategori: "", pemasukan: 0, pengeluaran: 0, tanggal: ""
   });
+  const [transactionType, setTransactionType] = useState("masuk"); // 'masuk' or 'keluar'
   const [editingKeuangan, setEditingKeuangan] = useState(null);
 
   // City Search State for Jadwal Sholat
@@ -1638,8 +1639,31 @@ export default function AdminPage() {
                 
                 <div className="bg-card/20 backdrop-blur-3xl border border-border/60 shadow-xl shadow-emerald-500/30 rounded-3xl p-6 shadow-sm">
                   <h3 className="text-base font-bold text-foreground mb-5 pb-3 border-b border-border">Catat Transaksi Baru</h3>
+                  
+                  {/* TYPE SELECTOR TABS */}
+                  <div className="flex gap-4 mb-6">
+                    <button 
+                      onClick={() => {
+                        setTransactionType("masuk");
+                        setNewKeuangan({ ...newKeuangan, kategori: "", pemasukan: newKeuangan.pemasukan || newKeuangan.pengeluaran, pengeluaran: 0 });
+                      }}
+                      className={`flex-1 py-3 px-4 rounded-xl font-bold transition-all ${transactionType === "masuk" ? "bg-primary text-primary-foreground shadow-md" : "bg-muted/50 text-muted-foreground hover:bg-muted"}`}
+                    >
+                      + Pemasukan Baru
+                    </button>
+                    <button 
+                      onClick={() => {
+                        setTransactionType("keluar");
+                        setNewKeuangan({ ...newKeuangan, kategori: "", pengeluaran: newKeuangan.pemasukan || newKeuangan.pengeluaran, pemasukan: 0 });
+                      }}
+                      className={`flex-1 py-3 px-4 rounded-xl font-bold transition-all ${transactionType === "keluar" ? "bg-destructive text-destructive-foreground shadow-md" : "bg-muted/50 text-muted-foreground hover:bg-muted"}`}
+                    >
+                      - Pengeluaran Baru
+                    </button>
+                  </div>
+
                   <form onSubmit={handleAddKeuangan} className="grid grid-cols-12 gap-5 items-end">
-                    <div className="col-span-2">
+                    <div className="col-span-12 md:col-span-3">
                       <label className="text-xs text-muted-foreground font-medium mb-1.5 block">Tanggal</label>
                       <input 
                         type="date" 
@@ -1649,62 +1673,57 @@ export default function AdminPage() {
                       />
                     </div>
 
-                    <div className="col-span-4">
+                    <div className="col-span-12 md:col-span-3">
+                      <label className="text-xs text-muted-foreground font-medium mb-1.5 block">Kategori</label>
+                      <input 
+                        list="kategori-options"
+                        placeholder="Pilih atau ketik kategori..."
+                        value={newKeuangan.kategori}
+                        onChange={(e) => setNewKeuangan({ ...newKeuangan, kategori: e.target.value })}
+                        className="w-full bg-input/50 border border-border rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary text-foreground"
+                      />
+                      <datalist id="kategori-options">
+                        {transactionType === "masuk" ? (
+                          <>
+                            <option value="Infak Jumat" />
+                            <option value="Infak Harian / Kotak Amal" />
+                            <option value="Donatur Tetap" />
+                            <option value="Zakat & Fidyah" />
+                            <option value="Hibah / Lainnya" />
+                          </>
+                        ) : (
+                          <>
+                            <option value="Operasional & Pemeliharaan" />
+                            <option value="Utilitas (Listrik/Air/Internet)" />
+                            <option value="Pembangunan & Renovasi" />
+                            <option value="Kajian, Dakwah & Pendidikan" />
+                            <option value="Kegiatan Sosial / Santunan" />
+                            <option value="Gaji Imam / Marbot / Pegawai" />
+                          </>
+                        )}
+                      </datalist>
+                    </div>
+
+                    <div className="col-span-12 md:col-span-4">
                       <label className="text-xs text-muted-foreground font-medium mb-1.5 block">Keterangan / Deskripsi</label>
                       <input 
                         type="text" 
-                        placeholder="Cth: Infak Jumat..."
+                        placeholder={transactionType === "masuk" ? "Cth: Infak Kotak Amal..." : "Cth: Bayar Listrik..."}
                         value={newKeuangan.deskripsi}
                         onChange={(e) => setNewKeuangan({ ...newKeuangan, deskripsi: e.target.value })}
                         className="w-full bg-input/50 border border-border rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary text-foreground"
                       />
                     </div>
 
-                    <div className="col-span-2">
-                      <label className="text-xs text-muted-foreground font-medium mb-1.5 block">Kategori</label>
-                      <input 
-                        list="kategori-options"
-                        placeholder="Pilih / ketik baru..."
-                        value={newKeuangan.kategori}
-                        onChange={(e) => setNewKeuangan({ ...newKeuangan, kategori: e.target.value })}
-                        className="w-full bg-input/50 border border-border rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary text-foreground"
-                      />
-                      <datalist id="kategori-options">
-                        <option value="Infak" />
-                        <option value="Donatur" />
-                        <option value="Operasional" />
-                        <option value="Utilitas" />
-                      </datalist>
-                    </div>
-
-                    <div className="col-span-2">
-                      <label className="text-xs text-muted-foreground font-medium mb-1.5 block">Tipe</label>
-                      <select 
-                        onChange={(e) => {
-                          const isMasuk = e.target.value === "masuk";
-                          const val = newKeuangan.pemasukan || newKeuangan.pengeluaran;
-                          if (isMasuk) {
-                            setNewKeuangan({ ...newKeuangan, pemasukan: val, pengeluaran: 0 });
-                          } else {
-                            setNewKeuangan({ ...newKeuangan, pemasukan: 0, pengeluaran: val });
-                          }
-                        }}
-                        className="w-full bg-input/50 border border-border rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary text-foreground"
-                      >
-                        <option value="masuk">Masuk (+)</option>
-                        <option value="keluar">Keluar (-)</option>
-                      </select>
-                    </div>
-
-                    <div className="col-span-2">
+                    <div className="col-span-12 md:col-span-2">
                       <label className="text-xs text-muted-foreground font-medium mb-1.5 block">Nominal (Rp)</label>
                       <input 
                         type="number" 
                         placeholder="0"
-                        value={newKeuangan.pemasukan || newKeuangan.pengeluaran || ""}
+                        value={transactionType === "masuk" ? newKeuangan.pemasukan || "" : newKeuangan.pengeluaran || ""}
                         onChange={(e) => {
                           const val = Number(e.target.value);
-                          if (newKeuangan.pemasukan > 0 || (!newKeuangan.pemasukan && !newKeuangan.pengeluaran)) {
+                          if (transactionType === "masuk") {
                             setNewKeuangan({ ...newKeuangan, pemasukan: val, pengeluaran: 0 });
                           } else {
                             setNewKeuangan({ ...newKeuangan, pemasukan: 0, pengeluaran: val });
@@ -1714,9 +1733,9 @@ export default function AdminPage() {
                       />
                     </div>
                     
-                    <div className="col-span-12 flex justify-end mt-2">
-                      <button type="submit" className="bg-primary text-primary-foreground text-sm font-medium px-8 py-3 rounded-xl shadow-sm hover:opacity-90 transition-colors cursor-pointer">
-                        Simpan Transaksi
+                    <div className="col-span-12 flex justify-end mt-4">
+                      <button type="submit" className={`${transactionType === "masuk" ? "bg-primary" : "bg-destructive"} text-white text-sm font-medium px-8 py-3 rounded-xl shadow-sm hover:opacity-90 transition-colors cursor-pointer w-full md:w-auto`}>
+                        Simpan {transactionType === "masuk" ? "Pemasukan" : "Pengeluaran"}
                       </button>
                     </div>
                   </form>
@@ -1747,17 +1766,21 @@ export default function AdminPage() {
                             <tr key={item.id} className={`hover:bg-muted/40 transition-colors ${index % 2 === 1 ? 'bg-muted/20' : 'bg-transparent'}`}>
                               <td className="py-4 px-4 text-sm font-medium text-foreground">{item.tanggal}</td>
                               <td className="py-4 px-4 text-sm text-foreground/80 font-medium">{item.deskripsi}</td>
-                              <td className="py-4 px-4 text-sm text-muted-foreground">{item.kategori}</td>
+                              <td className="py-4 px-4">
+                                <span className="inline-flex px-3 py-1 bg-secondary/30 text-secondary-foreground text-xs font-semibold rounded-lg border border-secondary/50">
+                                  {item.kategori || "-"}
+                                </span>
+                              </td>
                               <td className="py-4 px-4 text-sm font-mono font-bold text-foreground">
                                 Rp {Number(isIncome ? item.pemasukan : item.pengeluaran).toLocaleString("id-ID")}
                               </td>
                               <td className="py-4 px-4">
-                                <span className={`inline-flex px-3.5 py-1 text-xs font-bold rounded-full ${
+                                <span className={`inline-flex px-3.5 py-1 text-xs font-bold rounded-full border ${
                                   isIncome 
-                                    ? "bg-primary/20 text-primary" 
-                                    : "bg-destructive/15 text-destructive"
+                                    ? "bg-primary/10 text-primary border-primary/20" 
+                                    : "bg-destructive/10 text-destructive border-destructive/20"
                                 }`}>
-                                  {isIncome ? "Received" : "Expense"}
+                                  {isIncome ? "Pemasukan" : "Pengeluaran"}
                                 </span>
                               </td>
                               <td className="py-4 px-4 text-right">
