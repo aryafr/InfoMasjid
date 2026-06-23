@@ -149,7 +149,7 @@ export default function SuperAdminPage() {
   // Derived Stats
   const totalPaid = masjids.filter(m => m.payment_status === "paid").length;
   const totalPending = masjids.length - totalPaid;
-  const totalRevenue = totalPaid * PACKAGE_PRICE;
+  const totalRevenue = 0; // totalPaid * PACKAGE_PRICE;
 
   // Dynamic Chart Data Preparation
   const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
