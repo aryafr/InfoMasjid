@@ -5,9 +5,14 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { auth, db } from "@/lib/firebase";
 import { createUserWithEmailAndPassword } from "firebase/auth";
 import { doc, setDoc } from "firebase/firestore";
-import { Loader2, Building, MapPin, Mail, Lock, CheckCircle, ChevronRight, ArrowLeft, AlertTriangle } from "lucide-react";
+import { Loader2, Building, MapPin, Mail, Lock, CheckCircle, ChevronRight, ArrowLeft, AlertTriangle, Phone } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
+import toast from "react-hot-toast";
+import { Button } from "@/components/ui/Button";
+import { Input } from "@/components/ui/Input";
+import { Card, CardContent } from "@/components/ui/Card";
+import { Modal } from "@/components/ui/Modal";
 
 function CheckoutContent() {
   const router = useRouter();
@@ -18,11 +23,11 @@ function CheckoutContent() {
     nama_masjid: "",
     city: "",
     email: "",
+    wa_number: "",
     password: ""
   });
   
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
   const [customAlert, setCustomAlert] = useState({ show: false, message: "", type: "info", onConfirm: null });
 
   // Pricing & Voucher state
@@ -147,7 +152,6 @@ function CheckoutContent() {
   const handleRegisterAndPay = async (e) => {
     e.preventDefault();
     setLoading(true);
-    setError("");
 
     try {
       // 1. Create Firebase Auth User
@@ -163,6 +167,7 @@ function CheckoutContent() {
       await setDoc(doc(db, "masjids", masjidId), {
         ownerUid: user.uid,
         email: formData.email,
+        wa_number: formData.wa_number,
         nama_aplikasi: formData.nama_masjid,
         subscription_status: "pending_payment",
         payment_status: "pending",
@@ -223,6 +228,7 @@ function CheckoutContent() {
       // Also save a mapping of UID to Masjid ID for the superadmin/admin logic
       await setDoc(doc(db, "users", user.uid), {
         email: formData.email,
+        wa_number: formData.wa_number,
         masjidId: masjidId,
         role: "admin"
       });
@@ -240,6 +246,7 @@ function CheckoutContent() {
           customer_details: {
             first_name: formData.nama_masjid,
             email: formData.email,
+            phone: formData.wa_number,
           }
         })
       });
@@ -265,7 +272,7 @@ function CheckoutContent() {
           });
         },
         onError: function(result) {
-          setError("Pembayaran gagal atau dibatalkan.");
+          toast.error("Pembayaran gagal atau dibatalkan.");
         },
         onClose: function() {
           setCustomAlert({
@@ -279,7 +286,7 @@ function CheckoutContent() {
 
     } catch (err) {
       console.error(err);
-      setError(err.message);
+      toast.error(err.message);
     } finally {
       setLoading(false);
     }
@@ -287,32 +294,34 @@ function CheckoutContent() {
 
   return (
     <div className="min-h-screen bg-background text-foreground flex items-center justify-center p-6 relative overflow-hidden">
-      {/* Custom Alert Modal */}
-      {customAlert.show && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm px-4">
-          <div className="bg-card w-full max-w-sm rounded-2xl p-6 shadow-2xl border border-border animate-fade-in text-center">
-            <div className={`mx-auto w-16 h-16 rounded-full flex items-center justify-center mb-4 ${
-              customAlert.type === 'error' ? 'bg-destructive/10 text-destructive' :
-              customAlert.type === 'warning' ? 'bg-orange-500/10 text-orange-500' :
-              'bg-primary/10 text-primary'
-            }`}>
-              {customAlert.type === 'error' || customAlert.type === 'warning' ? <AlertTriangle className="w-8 h-8" /> : <CheckCircle className="w-8 h-8" />}
-            </div>
-            <h3 className="text-lg font-bold mb-2">Informasi</h3>
-            <p className="text-muted-foreground mb-6 text-sm">{customAlert.message}</p>
-            <button
-              onClick={() => {
-                const action = customAlert.onConfirm;
-                setCustomAlert({ show: false, message: "", type: "info", onConfirm: null });
-                if (action) action();
-              }}
-              className="w-full bg-primary text-primary-foreground font-bold py-3 rounded-xl hover:opacity-90 transition-opacity"
-            >
-              Mengerti
-            </button>
+      <Modal isOpen={customAlert.show} onClose={() => {
+        const action = customAlert.onConfirm;
+        setCustomAlert({ show: false, message: "", type: "info", onConfirm: null });
+        if (action) action();
+      }}>
+        <div className="text-center pb-4">
+          <div className={`mx-auto w-16 h-16 rounded-full flex items-center justify-center mb-4 ${
+            customAlert.type === 'error' ? 'bg-destructive/10 text-destructive' :
+            customAlert.type === 'warning' ? 'bg-orange-500/10 text-orange-500' :
+            'bg-primary/10 text-primary'
+          }`}>
+            {customAlert.type === 'error' || customAlert.type === 'warning' ? <AlertTriangle className="w-8 h-8" /> : <CheckCircle className="w-8 h-8" />}
           </div>
+          <h3 className="text-xl font-bold mb-2">Informasi</h3>
+          <p className="text-muted-foreground mb-6 text-sm">{customAlert.message}</p>
+          <Button
+            onClick={() => {
+              const action = customAlert.onConfirm;
+              setCustomAlert({ show: false, message: "", type: "info", onConfirm: null });
+              if (action) action();
+            }}
+            className="w-full"
+            size="lg"
+          >
+            Mengerti
+          </Button>
         </div>
-      )}
+      </Modal>
 
       {/* Background Decor */}
       <div className="absolute top-[-20%] left-[-10%] w-[50%] h-[50%] bg-primary/20 rounded-[100%] blur-[120px] pointer-events-none z-0"></div>
@@ -350,34 +359,37 @@ function CheckoutContent() {
             <div className="py-4 border-b border-border/50">
               <label className="text-sm font-bold text-foreground mb-2 block">Punya Kode Voucher?</label>
               <div className="flex gap-2">
-                <input 
+                <Input 
                   type="text" 
                   placeholder="Masukkan kode..." 
                   value={voucherCode}
                   onChange={(e) => setVoucherCode(e.target.value.toUpperCase())}
                   disabled={appliedVoucher !== null || isValidatingVoucher}
-                  className="w-full bg-background border border-border rounded-xl px-4 py-2 focus:outline-none focus:ring-2 focus:ring-primary font-medium uppercase"
+                  className="uppercase"
                 />
                 {appliedVoucher ? (
-                  <button 
+                  <Button 
                     type="button"
+                    variant="destructive"
                     onClick={() => {
                       setAppliedVoucher(null);
                       setVoucherError("");
                     }}
-                    className="bg-destructive/10 text-destructive font-bold px-4 rounded-xl hover:bg-destructive/20 transition-colors shrink-0"
+                    className="shrink-0 h-[52px]"
                   >
                     Batal
-                  </button>
+                  </Button>
                 ) : (
-                  <button 
+                  <Button 
                     type="button"
+                    variant="secondary"
                     onClick={handleApplyVoucher}
                     disabled={isValidatingVoucher || !voucherCode}
-                    className="bg-secondary text-secondary-foreground font-bold px-4 rounded-xl hover:opacity-90 transition-opacity disabled:opacity-50 shrink-0 flex items-center gap-2"
+                    isLoading={isValidatingVoucher}
+                    className="shrink-0 h-[52px]"
                   >
-                    {isValidatingVoucher ? <Loader2 className="h-4 w-4 animate-spin" /> : "Terapkan"}
-                  </button>
+                    {!isValidatingVoucher && "Terapkan"}
+                  </Button>
                 )}
               </div>
               {voucherError && <p className="text-xs text-destructive font-bold mt-2">{voucherError}</p>}
@@ -397,37 +409,27 @@ function CheckoutContent() {
           </div>
         </div>
 
-        {/* Right Side: Form */}
-        <div className="bg-card/40 backdrop-blur-xl border-2 border-border/60 p-8 rounded-3xl shadow-xl">
+        <Card className="bg-card/40 backdrop-blur-xl border-2 border-border/60 p-8 shadow-xl">
           <form onSubmit={handleRegisterAndPay} className="flex flex-col gap-5">
-            
-            {error && (
-              <div className="bg-destructive/10 border border-destructive/20 text-destructive p-3 rounded-xl text-sm font-medium">
-                {error}
-              </div>
-            )}
 
             <div>
               <label className="text-sm font-bold text-foreground mb-1 block">Nama Masjid</label>
-              <div className="relative">
-                <Building className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-                <input 
-                  type="text" 
-                  required
-                  placeholder="Contoh: Masjid Raya Al-Falah"
-                  value={formData.nama_masjid}
-                  onChange={(e) => setFormData({...formData, nama_masjid: e.target.value})}
-                  className="w-full bg-background border border-border rounded-xl pl-10 pr-4 py-3 focus:outline-none focus:ring-2 focus:ring-primary font-medium"
-                />
-              </div>
+              <Input 
+                type="text" 
+                icon={Building}
+                required
+                placeholder="Contoh: Masjid Raya Al-Falah"
+                value={formData.nama_masjid}
+                onChange={(e) => setFormData({...formData, nama_masjid: e.target.value})}
+              />
             </div>
 
             <div className="relative">
               <label className="text-sm font-bold text-foreground mb-1 block">Kota / Kabupaten (Untuk Sinkronisasi Jadwal)</label>
               <div className="relative">
-                <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-                <input 
+                <Input 
                   type="text" 
+                  icon={MapPin}
                   required
                   placeholder="Ketik nama kota... (misal: Jakarta)"
                   value={formData.city}
@@ -439,7 +441,6 @@ function CheckoutContent() {
                     if (citySuggestions.length > 0) setShowCityDropdown(true);
                   }}
                   onBlur={() => setTimeout(() => setShowCityDropdown(false), 200)}
-                  className="w-full bg-background border border-border rounded-xl pl-10 pr-10 py-3 focus:outline-none focus:ring-2 focus:ring-primary font-medium"
                 />
                 {isSearchingCity && (
                   <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 animate-spin text-muted-foreground" />
@@ -451,7 +452,8 @@ function CheckoutContent() {
                   {citySuggestions.map((city) => (
                     <li 
                       key={city.id}
-                      onClick={() => {
+                      onMouseDown={(e) => {
+                        e.preventDefault(); // Prevent input from losing focus
                         // Title Case conversion for nicer display
                         const formattedCity = city.lokasi.toLowerCase().split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
                         setFormData({...formData, city: formattedCity});
@@ -470,50 +472,53 @@ function CheckoutContent() {
 
             <div>
               <label className="text-sm font-bold text-foreground mb-1 block">Alamat Email Pengelola</label>
-              <div className="relative">
-                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-                <input 
-                  type="email" 
-                  required
-                  placeholder="email@contoh.com"
-                  value={formData.email}
-                  onChange={(e) => setFormData({...formData, email: e.target.value})}
-                  className="w-full bg-background border border-border rounded-xl pl-10 pr-4 py-3 focus:outline-none focus:ring-2 focus:ring-primary font-medium"
-                />
-              </div>
+              <Input 
+                type="email" 
+                icon={Mail}
+                required
+                placeholder="email@contoh.com"
+                value={formData.email}
+                onChange={(e) => setFormData({...formData, email: e.target.value})}
+              />
+            </div>
+
+            <div>
+              <label className="text-sm font-bold text-foreground mb-1 block">Nomor WhatsApp</label>
+              <Input 
+                type="tel" 
+                icon={Phone}
+                required
+                placeholder="081234567890"
+                value={formData.wa_number}
+                onChange={(e) => setFormData({...formData, wa_number: e.target.value.replace(/[^0-9]/g, '')})}
+              />
             </div>
 
             <div>
               <label className="text-sm font-bold text-foreground mb-1 block">Password Login</label>
-              <div className="relative">
-                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-                <input 
-                  type="password" 
-                  required
-                  placeholder="Minimal 6 karakter"
-                  value={formData.password}
-                  onChange={(e) => setFormData({...formData, password: e.target.value})}
-                  className="w-full bg-background border border-border rounded-xl pl-10 pr-4 py-3 focus:outline-none focus:ring-2 focus:ring-primary font-medium"
-                />
-              </div>
+              <Input 
+                type="password" 
+                icon={Lock}
+                required
+                placeholder="Minimal 6 karakter"
+                value={formData.password}
+                onChange={(e) => setFormData({...formData, password: e.target.value})}
+              />
             </div>
 
-            <button 
+            <Button 
               type="submit" 
-              disabled={loading}
-              className="mt-4 w-full bg-primary hover:bg-primary/90 text-primary-foreground font-black py-4 rounded-xl flex items-center justify-center gap-2 transition-all shadow-lg hover:shadow-primary/30 disabled:opacity-50"
+              isLoading={loading}
+              className="mt-4 w-full"
+              size="lg"
             >
-              {loading ? (
-                <><Loader2 className="h-5 w-5 animate-spin" /> Memproses...</>
-              ) : (
-                <>Bayar via Midtrans <ChevronRight className="h-5 w-5" /></>
-              )}
-            </button>
+              {!loading && <>Bayar via Midtrans <ChevronRight className="ml-2 h-5 w-5" /></>}
+            </Button>
             <p className="text-xs text-center text-muted-foreground font-medium mt-2">
               Sistem pembayaran kami dijamin aman oleh Midtrans (Gojek Group).
             </p>
           </form>
-        </div>
+        </Card>
 
       </div>
     </div>

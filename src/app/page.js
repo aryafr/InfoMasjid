@@ -372,18 +372,18 @@ export default function LandingPage() {
                 {pricing?.is_discount_active ? (
                   <>
                     <div className="flex items-end gap-1">
-                      <span className="text-5xl font-extrabold tracking-tight">Rp {Math.ceil(pricing.berkah.discounted_price / 12 / 1000)}rb</span>
+                      <span className="text-5xl font-extrabold tracking-tight">Rp {Math.ceil(pricing?.berkah?.discounted_price / 12 / 1000)}rb</span>
                       <span className="text-muted-foreground font-medium mb-1">/ bulan</span>
                     </div>
                     <div className="text-sm font-medium mt-2 flex items-center gap-2">
-                      <span className="text-muted-foreground line-through">Rp {pricing.berkah.original_price.toLocaleString('id-ID')}</span>
-                      <span className="text-primary font-bold">Ditagih Rp {pricing.berkah.discounted_price.toLocaleString('id-ID')} / tahun</span>
+                      <span className="text-muted-foreground line-through">Rp {pricing?.berkah?.original_price.toLocaleString('id-ID')}</span>
+                      <span className="text-primary font-bold">Ditagih Rp {pricing?.berkah?.discounted_price.toLocaleString('id-ID')} / tahun</span>
                     </div>
                   </>
                 ) : (
                   <>
                     <div className="flex items-end gap-1">
-                      <span className="text-5xl font-extrabold tracking-tight">Rp {pricing?.berkah?.original_price ? Math.ceil(pricing.berkah.original_price / 12 / 1000) : 21}rb</span>
+                      <span className="text-5xl font-extrabold tracking-tight">Rp {pricing?.berkah?.original_price ? Math.ceil(pricing?.berkah?.original_price / 12 / 1000) : 21}rb</span>
                       <span className="text-muted-foreground font-medium mb-1">/ bulan</span>
                     </div>
                     <div className="text-sm text-primary font-medium mt-2">
@@ -429,18 +429,18 @@ export default function LandingPage() {
                 {pricing?.is_discount_active ? (
                   <>
                     <div className="flex items-end gap-1">
-                      <span className="text-5xl font-extrabold tracking-tight text-foreground">Rp {Math.ceil(pricing.premium.discounted_price / 12 / 1000)}rb</span>
+                      <span className="text-5xl font-extrabold tracking-tight text-foreground">Rp {Math.ceil(pricing?.premium?.discounted_price / 12 / 1000)}rb</span>
                       <span className="text-foreground/70 font-medium mb-1">/ bulan</span>
                     </div>
                     <div className="text-sm font-medium mt-2 flex items-center gap-2">
-                      <span className="text-foreground/60 line-through">Rp {pricing.premium.original_price.toLocaleString('id-ID')}</span>
-                      <span className="text-primary font-bold">Ditagih Rp {pricing.premium.discounted_price.toLocaleString('id-ID')} / tahun</span>
+                      <span className="text-foreground/60 line-through">Rp {pricing?.premium?.original_price.toLocaleString('id-ID')}</span>
+                      <span className="text-primary font-bold">Ditagih Rp {pricing?.premium?.discounted_price.toLocaleString('id-ID')} / tahun</span>
                     </div>
                   </>
                 ) : (
                   <>
                     <div className="flex items-end gap-1">
-                      <span className="text-5xl font-extrabold tracking-tight text-foreground">Rp {pricing?.premium?.original_price ? Math.ceil(pricing.premium.original_price / 12 / 1000) : 46}rb</span>
+                      <span className="text-5xl font-extrabold tracking-tight text-foreground">Rp {pricing?.premium?.original_price ? Math.ceil(pricing?.premium?.original_price / 12 / 1000) : 46}rb</span>
                       <span className="text-foreground/70 font-medium mb-1">/ bulan</span>
                     </div>
                     <div className="text-sm text-primary font-bold mt-2">

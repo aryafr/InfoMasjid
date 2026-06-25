@@ -2,7 +2,7 @@
 
 import { useParams, notFound } from "next/navigation";
 
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useMemo, useRef } from "react";
 import Image from "next/image";
 import { 
   Clock, 
@@ -93,6 +93,14 @@ const FALLBACK_QUOTES = [
   "“Jadikanlah sabar dan shalat sebagai penolongmu. Dan sesungguhnya yang demikian itu sungguh berat, kecuali bagi orang-orang yang khusyu'.” (QS. Al-Baqarah: 45)"
 ];
 
+const applyOffset = (timeStr, offsetMinutes) => {
+  if (!timeStr || !offsetMinutes) return timeStr;
+  const [h, m] = timeStr.split(':').map(Number);
+  const date = new Date();
+  date.setHours(h, m + parseInt(offsetMinutes), 0, 0);
+  return `${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`;
+};
+
 export default function MasjidDisplay() {
   const params = useParams();
   const masjidId = params.masjidId || 'demo-masjid';
@@ -120,6 +128,28 @@ export default function MasjidDisplay() {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
   const [sholatJumat, setSholatJumat] = useState(null);
+  const upcomingJumat = useMemo(() => {
+    if (!sholatJumat) return null;
+    let list = [];
+    if (sholatJumat.list) {
+      list = sholatJumat.list;
+    } else if (sholatJumat.tanggal) {
+      list = [sholatJumat];
+    }
+    
+    // Filter to future or today's fridays
+    const today = new Date();
+    today.setHours(0, 0, 0, 0); // start of today
+    
+    const validList = list.filter(j => {
+      if (!j.tanggal) return false;
+      const jDate = new Date(j.tanggal);
+      jDate.setHours(0,0,0,0);
+      return jDate >= today;
+    }).sort((a, b) => new Date(a.tanggal) - new Date(b.tanggal));
+    
+    return validList.length > 0 ? validList[0] : null;
+  }, [sholatJumat]);
   const [pengumuman, setPengumuman] = useState([]);
   const [keuangan, setKeuangan] = useState([]);
   const [qris, setQris] = useState(null);
@@ -144,6 +174,7 @@ export default function MasjidDisplay() {
   const [videoFinished, setVideoFinished] = useState(false);
   const [audioUnlocked, setAudioUnlocked] = useState(false);
   const [keuanganPage, setKeuanganPage] = useState(0);
+  const [pengumumanPage, setPengumumanPage] = useState(0);
 
   // 0. Unlock Audio on first interaction
   useEffect(() => {
@@ -200,7 +231,9 @@ export default function MasjidDisplay() {
     const currentRealSeconds = realNow.getHours() * 3600 + realNow.getMinutes() * 60 + realNow.getSeconds();
     
     const prayers = [
+      { name: "Imsak", timeStr: jadwal.Imsak },
       { name: "Subuh", timeStr: jadwal.Subuh },
+      { name: "Terbit", timeStr: jadwal.Terbit },
       { name: "Dzuhur", timeStr: jadwal.Dzuhur },
       { name: "Ashar", timeStr: jadwal.Ashar },
       { name: "Maghrib", timeStr: jadwal.Maghrib },
@@ -225,11 +258,11 @@ export default function MasjidDisplay() {
         break;
       }
     }
-    
-    if (targetPrayerSeconds === null && prayers[0].timeStr) {
-      const [h, m] = prayers[0].timeStr.split(":").map(Number);
+    let firstPrayer = prayers.find(p => p.timeStr);
+    if (targetPrayerSeconds === null && firstPrayer) {
+      const [h, m] = firstPrayer.timeStr.split(":").map(Number);
       targetPrayerSeconds = h * 3600 + m * 60 + 24 * 3600;
-      selectedJeda = getJedaIqamah(settings, prayers[0].name);
+      selectedJeda = getJedaIqamah(settings, firstPrayer.name);
     }
     
     if (targetPrayerSeconds === null) return;
@@ -263,7 +296,9 @@ export default function MasjidDisplay() {
       // Calculate next prayer if jadwal is available
       if (jadwal) {
         const prayers = [
+          { name: "Imsak", timeStr: jadwal.Imsak },
           { name: "Subuh", timeStr: jadwal.Subuh },
+          { name: "Terbit", timeStr: jadwal.Terbit },
           { name: "Dzuhur", timeStr: jadwal.Dzuhur },
           { name: "Ashar", timeStr: jadwal.Ashar },
           { name: "Maghrib", timeStr: jadwal.Maghrib },
@@ -331,9 +366,10 @@ export default function MasjidDisplay() {
           }
         }
 
-        // If all prayers passed, next is tomorrow's Subuh
-        if (!found && prayers[0].timeStr) {
-          const [h, m] = prayers[0].timeStr.split(":").map(Number);
+        // If all prayers passed, next is tomorrow's first available prayer
+        let firstPrayer = prayers.find(p => p.timeStr);
+        if (!found && firstPrayer) {
+          const [h, m] = firstPrayer.timeStr.split(":").map(Number);
           const prayerSeconds = h * 3600 + m * 60;
           const leftSec = (24 * 3600 - currentSeconds) + prayerSeconds;
           
@@ -344,8 +380,8 @@ export default function MasjidDisplay() {
           setIsSholatMode(false);
           
           setNextPrayer({
-            name: "Subuh (Besok)",
-            time: prayers[0].timeStr.substring(0, 5),
+            name: `${firstPrayer.name} (Besok)`,
+            time: firstPrayer.timeStr.substring(0, 5),
             secondsLeft: leftSec,
             minutesLeft: Math.ceil(leftSec / 60)
           });
@@ -478,47 +514,60 @@ export default function MasjidDisplay() {
     }
   }, [settings, masjidRoot, masjidId]);
 
-  // 4. Slide Rotation Logic
+  // 4. Unified Slide & Pagination Rotation Logic
   useEffect(() => {
-    if (!settings || !settings.rotation_enabled || activeSlides.length <= 1) return;
+    if (!settings || !settings.rotation_enabled || activeSlides.length === 0) return;
 
     const timer = setInterval(() => {
       setCountdown((prev) => {
         if (prev <= 1) {
-          setCurrentSlideIndex((curr) => (curr + 1) % activeSlides.length);
-          return settings.rotation_interval || 12;
+          const currentSlideObj = activeSlides[currentSlideIndex];
+          const rotationInterval = settings.rotation_interval || 12;
+          
+          // Check Pengumuman pagination
+          if (currentSlideObj?.url === "pengumuman") {
+            const totalPages = Math.ceil((pengumuman || []).length / 2);
+            if (totalPages > 1) {
+              if (pengumumanPage < totalPages - 1) {
+                setPengumumanPage(pengumumanPage + 1);
+                return rotationInterval;
+              } else {
+                setPengumumanPage(0);
+              }
+            }
+          }
+
+          // Check Keuangan pagination
+          if (currentSlideObj?.url === "keuangan") {
+             const sevenDaysAgo = new Date();
+             sevenDaysAgo.setHours(0, 0, 0, 0);
+             sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+             const weeklyData = (keuangan || []).filter(item => item.tanggal && new Date(item.tanggal) >= sevenDaysAgo);
+             const totalPages = Math.ceil(weeklyData.length / 4);
+             
+             if (totalPages > 1) {
+               if (keuanganPage < totalPages - 1) {
+                 setKeuanganPage(keuanganPage + 1);
+                 return rotationInterval;
+               } else {
+                 setKeuanganPage(0);
+               }
+             }
+          }
+
+          // Advance to next slide if not blocked by pagination
+          // Only advance if there's more than 1 slide
+          if (activeSlides.length > 1) {
+            setCurrentSlideIndex((curr) => (curr + 1) % activeSlides.length);
+          }
+          return rotationInterval;
         }
         return prev - 1;
       });
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [settings, activeSlides]);
-
-  // 4.5 Keuangan Pagination Logic
-  useEffect(() => {
-    if (!currentSlide || currentSlide.url !== "keuangan") {
-      setKeuanganPage(0);
-      return;
-    }
-    
-    const sevenDaysAgo = new Date();
-    sevenDaysAgo.setHours(0, 0, 0, 0);
-    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-    const weeklyData = (keuangan || []).filter(item => {
-      if (!item.tanggal) return false;
-      return new Date(item.tanggal) >= sevenDaysAgo;
-    });
-    
-    const totalPages = Math.ceil(weeklyData.length / 4);
-    if (totalPages <= 1) return;
-
-    const timer = setInterval(() => {
-      setKeuanganPage((prev) => (prev + 1) % totalPages);
-    }, 5000);
-
-    return () => clearInterval(timer);
-  }, [currentSlide, keuangan]);
+  }, [settings, activeSlides, currentSlideIndex, pengumumanPage, keuanganPage, pengumuman, keuangan]);
 
   // 5. Zero-Setup API Auto-Update
   useEffect(() => {
@@ -535,18 +584,21 @@ export default function MasjidDisplay() {
           const method = settings.auto_update.method || 11;
           
           const res = await fetch(
-            `https://api.aladhan.com/v1/timingsByCity?city=${city}&country=${country}&method=${method}`
+            `https://api.aladhan.com/v1/timingsByCity?city=${encodeURIComponent(city)}&country=${encodeURIComponent(country)}&method=${method}`
           );
           if (res.ok) {
             const result = await res.json();
             const timings = result.data.timings;
             
+            const offsets = settings.jadwal_offsets || {};
             const newJadwal = {
-              Subuh: timings.Fajr,
-              Dzuhur: timings.Dhuhr,
-              Ashar: timings.Asr,
-              Maghrib: timings.Maghrib,
-              Isya: timings.Isha
+              Imsak: applyOffset(timings.Imsak, offsets.Imsak || 0),
+              Subuh: applyOffset(timings.Fajr, offsets.Subuh || 0),
+              Terbit: applyOffset(timings.Sunrise, offsets.Terbit || 0),
+              Dzuhur: applyOffset(timings.Dhuhr, offsets.Dzuhur || 0),
+              Ashar: applyOffset(timings.Asr, offsets.Ashar || 0),
+              Maghrib: applyOffset(timings.Maghrib, offsets.Maghrib || 0),
+              Isya: applyOffset(timings.Isha, offsets.Isya || 0)
             };
             
             await updateJadwalSholatFirestore(masjidId, newJadwal);
@@ -973,11 +1025,11 @@ export default function MasjidDisplay() {
                 <div className="bg-card/20 backdrop-blur-3xl rounded-[2rem] p-8 border-2 border-border/60 flex flex-col justify-between items-center text-center shadow-xl shadow-emerald-500/30">
                   <span className="text-foreground/80 text-xl font-black tracking-widest uppercase">Jumat Terdekat</span>
                   <div className="my-4">
-                    <p className="text-primary text-4xl font-black">{sholatJumat?.khatib || "Loading..."}</p>
+                    <p className="text-primary text-4xl font-black">{upcomingJumat?.khatib || "Loading..."}</p>
                     <p className="text-lg text-foreground/70 font-bold mt-2 uppercase tracking-wide">Khatib & Imam</p>
                   </div>
                   <div className="bg-muted/80 px-6 py-3 rounded-2xl border-2 border-border text-lg text-foreground font-bold tabular-nums">
-                    {sholatJumat?.tanggal ? new Date(sholatJumat.tanggal).toLocaleDateString("id-ID", { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }) : "Loading..."}
+                    {upcomingJumat?.tanggal ? new Date(sholatJumat.tanggal).toLocaleDateString("id-ID", { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }) : "Loading..."}
                   </div>
                 </div>
               </div>
@@ -991,7 +1043,7 @@ export default function MasjidDisplay() {
                     <Clock className="h-6 w-6" /> Waktu Sholat
                   </h3>
                   <div className="flex flex-col gap-2">
-                    {["Subuh", "Dzuhur", "Ashar", "Maghrib", "Isya"].map((name) => (
+                    {["Imsak", "Subuh", "Terbit", "Dzuhur", "Ashar", "Maghrib", "Isya"].map((name) => (
                       <div 
                         key={name} 
                         className={`flex items-center justify-between px-5 py-3 rounded-2xl transition-all border-2 ${
@@ -1171,7 +1223,7 @@ export default function MasjidDisplay() {
 
               <div className="bg-card/20 backdrop-blur-3xl border-2 border-border/60 p-10 rounded-[3rem] w-full flex flex-col gap-8 shadow-2xl shadow-emerald-500/30 relative overflow-hidden">
                 <div className="absolute top-0 right-0 bg-primary text-primary-foreground font-black px-8 py-3 rounded-tr-[3rem] rounded-bl-[2.5rem] text-2xl font-mono shadow-xl">
-                  {sholatJumat?.tanggal || "Segera Hadir"}
+                  {upcomingJumat?.tanggal || "Segera Hadir"}
                 </div>
                 
                 <div className="flex items-center gap-8 border-b-2 border-border/50 pb-6 mt-4">
@@ -1179,7 +1231,7 @@ export default function MasjidDisplay() {
                     <User className="h-16 w-16" />
                   </div>
                   <div>
-                    <h3 className="text-5xl font-black text-foreground drop-shadow-sm">{sholatJumat?.khatib || "-"}</h3>
+                    <h3 className="text-5xl font-black text-foreground drop-shadow-sm">{upcomingJumat?.khatib || "-"}</h3>
                     <p className="text-foreground/70 font-black text-2xl tracking-widest uppercase mt-2">Khatib Sholat Jumat</p>
                   </div>
                 </div>
@@ -1189,7 +1241,7 @@ export default function MasjidDisplay() {
                     <User className="h-16 w-16" />
                   </div>
                   <div>
-                    <h3 className="text-5xl font-black text-foreground drop-shadow-sm">{sholatJumat?.imam || "-"}</h3>
+                    <h3 className="text-5xl font-black text-foreground drop-shadow-sm">{upcomingJumat?.imam || "-"}</h3>
                     <p className="text-foreground/70 font-black text-2xl tracking-widest uppercase mt-2">Imam Sholat Jumat</p>
                   </div>
                 </div>
@@ -1199,7 +1251,7 @@ export default function MasjidDisplay() {
                     <Volume2 className="h-16 w-16" />
                   </div>
                   <div>
-                    <h3 className="text-5xl font-black text-foreground drop-shadow-sm">{sholatJumat?.muadzin || "-"}</h3>
+                    <h3 className="text-5xl font-black text-foreground drop-shadow-sm">{upcomingJumat?.muadzin || "-"}</h3>
                     <p className="text-foreground/70 font-black text-2xl tracking-widest uppercase mt-2">Muadzin / Bilal</p>
                   </div>
                 </div>
@@ -1216,26 +1268,43 @@ export default function MasjidDisplay() {
               </div>
 
               <div className="flex flex-col gap-6 w-full mt-4">
-                {(pengumuman || []).slice(0, 4).map((item, index) => (
+                {(pengumuman || []).slice(pengumumanPage * 2, (pengumumanPage + 1) * 2).map((item, index) => (
                   <div 
                     key={item.id} 
-                    className="bg-card/20 backdrop-blur-3xl p-6 rounded-[2rem] border-2 border-border/60 flex items-center gap-8 shadow-xl shadow-emerald-500/30"
+                    className="bg-card/20 backdrop-blur-3xl p-6 rounded-[2rem] border-2 border-border/60 flex items-start gap-8 shadow-xl shadow-emerald-500/30"
                   >
-                    <div className="h-24 w-24 rounded-[1.5rem] bg-primary/10 border-2 border-primary/20 text-primary flex flex-col items-center justify-center font-bold tracking-tight text-center shrink-0 shadow-inner">
-                      <span className="text-lg uppercase font-black opacity-80 tracking-widest">Tgl</span>
-                      <span className="text-4xl font-mono font-black mt-1 leading-none flex items-center justify-center">
+                    <div className="h-24 w-24 rounded-[1.5rem] bg-primary border-2 border-primary-foreground/20 text-primary-foreground flex flex-col items-center justify-center font-bold tracking-tight text-center shrink-0 shadow-lg mt-1">
+                      <span className="text-lg uppercase font-black opacity-90 tracking-widest leading-none">TGL</span>
+                      <span className="text-[2.5rem] font-mono font-black mt-1 leading-none">
                         {item.tanggal ? item.tanggal.substring(8, 10) : <Megaphone className="h-10 w-10" />}
                       </span>
                     </div>
                     <div className="flex-1">
-                      <p className="text-foreground text-3xl font-semibold leading-snug line-clamp-2">{item.isi}</p>
-                      <div className="text-foreground/60 text-xl font-black mt-3 font-mono uppercase tracking-widest">
-                        Dipublikasikan pada: {item.tanggal}
+                      {item.judul && (
+                        <h3 className="text-4xl font-black text-foreground drop-shadow-sm mb-3">
+                          {item.judul}
+                        </h3>
+                      )}
+                      <p className={`text-foreground/90 font-medium leading-relaxed ${item.judul ? 'text-2xl' : 'text-3xl'} whitespace-pre-wrap`}>
+                        {item.isi}
+                      </p>
+                      <div className="text-primary font-black mt-4 font-mono uppercase tracking-widest text-lg flex items-center gap-2">
+                        <span className="w-2 h-2 rounded-full bg-primary animate-pulse"></span>
+                        {item.tanggal ? new Date(item.tanggal).toLocaleDateString("id-ID", { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }) : ""}
                       </div>
                     </div>
                   </div>
                 ))}
               </div>
+              
+              {/* Pagination Dots */}
+              {pengumuman && pengumuman.length > 2 && (
+                <div className="flex justify-center gap-2 mt-4">
+                  {Array.from({ length: Math.ceil(pengumuman.length / 2) }).map((_, i) => (
+                    <div key={i} className={`h-2 rounded-full transition-all duration-500 ${i === pengumumanPage ? "w-8 bg-primary" : "w-2 bg-primary/30"}`} />
+                  ))}
+                </div>
+              )}
             </div>
           )}
 

@@ -31,7 +31,9 @@ export default function StaticTVPreview() {
       { url: "welcome", active: true },
       { url: "utama", active: true },
       { url: "pengumuman", active: true },
-      { url: "keuangan", active: true }
+      { url: "qris", active: true },
+      { url: "keuangan", active: true },
+      { url: "idul-fitri", active: true }
     ],
     posters: []
   };
@@ -49,6 +51,22 @@ export default function StaticTVPreview() {
     khatib: "Ustadz H. Abdul Somad",
     imam: "KH. Zainuddin",
     muadzin: "Ust. Fulan"
+  };
+
+  const idulFitri = {
+    tahun: "1447 H",
+    tanggal: "Minggu, 14 Februari 2027",
+    waktu: "07:00",
+    khatib: "Ustadz Adi Hidayat",
+    imam: "Syeikh Ali Jaber",
+    keterangan: "1 Syawal 1447 H"
+  };
+
+  const qris = {
+    atas_nama: "Masjid Da'watul Islam",
+    nomor_rekening: "0123456789",
+    bank: "BSI (Bank Syariah Indonesia)",
+    keterangan: "Gunakan GoPay, OVO, Dana, LinkAja, atau Mobile Banking untuk memindai."
   };
 
   const pengumuman = [
@@ -148,7 +166,7 @@ export default function StaticTVPreview() {
             </div>
             <div className="h-16 w-1 bg-border/50 rounded-full mx-2"></div>
             <div className="flex items-center gap-4">
-              <span className="text-5xl font-mono font-black tabular-nums tracking-tighter drop-shadow-md transition-all duration-500 text-primary">
+              <span className={`text-5xl font-mono font-black tabular-nums tracking-tighter drop-shadow-md transition-all duration-500 text-primary`}>
                 {nextPrayer.time}
               </span>
               <div className="px-5 py-2 rounded-full text-base font-black tracking-widest uppercase shadow-inner whitespace-nowrap flex items-center justify-center transition-all duration-300 bg-muted/80 text-foreground border-2 border-border">
@@ -164,14 +182,16 @@ export default function StaticTVPreview() {
             <div className="text-xl font-black text-foreground tracking-widest uppercase flex items-center justify-end gap-2 drop-shadow-sm">
               <Calendar className="h-6 w-6 text-primary" /> {dateStr}
             </div>
-            <div className="text-sm font-bold text-foreground/70 tracking-widest uppercase mt-1 drop-shadow-sm">
-              {hijriDateStr}
-            </div>
+            {hijriDateStr && (
+              <div className="text-sm font-bold text-foreground/70 tracking-widest uppercase mt-1 drop-shadow-sm">
+                {hijriDateStr}
+              </div>
+            )}
           </div>
           
-          <div className="bg-card/20 backdrop-blur-3xl border-2 border-border/80 px-8 py-4 rounded-3xl shadow-2xl flex items-center gap-4 shadow-primary/5">
-            <Clock className="h-10 w-10 text-primary animate-pulse" />
-            <span className="text-6xl font-mono font-black tracking-tighter tabular-nums text-foreground">
+          <div className="bg-card/30 backdrop-blur-3xl border-4 border-border/80 px-10 py-5 rounded-[2.5rem] shadow-2xl flex items-center gap-6 shadow-primary/10">
+            <Clock className="h-12 w-12 text-primary animate-pulse" />
+            <span className="text-7xl font-mono font-black tracking-tighter tabular-nums text-foreground drop-shadow-lg">
               {time}
             </span>
           </div>
@@ -347,19 +367,119 @@ export default function StaticTVPreview() {
             </div>
           )}
 
+          {/* Slide: QRIS Donasi Cashless */}
+          {currentSlide.url === "qris" && (
+            <div className="animate-fade-in flex flex-col justify-center items-center gap-8 w-full h-full max-w-6xl mx-auto">
+              <div className="text-center">
+                <h2 className="text-5xl font-black text-foreground tracking-widest uppercase drop-shadow-md">QRIS Donasi Digital</h2>
+                <p className="text-2xl text-foreground/70 font-bold mt-2">Salurkan infak terbaik Anda secara cashless melalui e-wallet / m-banking</p>
+              </div>
+
+              <div className="bg-card/20 backdrop-blur-3xl border-2 border-border/60 p-10 rounded-[3rem] w-full grid grid-cols-2 gap-10 items-center shadow-2xl shadow-emerald-500/30 mt-4">
+                
+                {/* QR Code Column (50%) */}
+                <div className="flex flex-col items-center justify-center bg-white p-8 rounded-[2.5rem] border-4 border-border shadow-inner w-full">
+                  <Image 
+                    src="/qris_example.png" 
+                    alt="QRIS Donasi" 
+                    width={400}
+                    height={400}
+                    priority
+                    className="rounded-2xl object-contain mix-blend-multiply w-[350px] h-[350px]"
+                  />
+                  <span className="text-2xl uppercase font-black text-slate-800 tracking-widest mt-6">
+                    QRIS GPN INDONESIA
+                  </span>
+                </div>
+
+                {/* Bank / Rekening Info Column */}
+                <div className="flex flex-col gap-6">
+                  <div className="bg-muted/60 p-8 rounded-[2rem] border-2 border-border">
+                    <span className="text-xl text-foreground/70 block font-black uppercase tracking-widest">Nama Merchant</span>
+                    <span className="text-4xl font-black text-foreground mt-2 block">{qris?.atas_nama || "DKM DA'WATUL ISLAM"}</span>
+                  </div>
+
+                  <div className="bg-muted/60 p-8 rounded-[2rem] border-2 border-border">
+                    <span className="text-xl text-foreground/70 block font-black uppercase tracking-widest">Rekening Transfer</span>
+                    <span className="text-5xl font-mono font-black text-primary mt-2 block tracking-tight">{qris?.nomor_rekening || "-"}</span>
+                    <span className="text-2xl text-foreground font-bold uppercase tracking-widest block mt-3">{qris?.bank || "-"}</span>
+                  </div>
+
+                  <p className="text-xl text-foreground/60 leading-relaxed italic font-bold">
+                    * {qris?.keterangan || "Gunakan GoPay, OVO, Dana, LinkAja, atau Mobile Banking untuk memindai."}
+                  </p>
+                </div>
+
+              </div>
+            </div>
+          )}
+
+          {/* Slide: Idul Fitri */}
+          {currentSlide.url === "idul-fitri" && idulFitri && (
+            <div className="animate-fade-in flex flex-col justify-center items-center gap-10 w-full h-full">
+              <div className="text-center">
+                <span className="text-xl font-black tracking-widest text-primary bg-primary/10 border-2 border-primary/20 px-8 py-3 rounded-full uppercase shadow-inner">
+                  Informasi Hari Raya
+                </span>
+                <h2 className="text-6xl font-black text-foreground tracking-widest uppercase mt-8 drop-shadow-md">Sholat Idul Fitri {idulFitri.tahun}</h2>
+                <div className="h-2 w-32 bg-primary mx-auto mt-6 rounded-full shadow-lg shadow-primary/30"></div>
+              </div>
+
+              <div className="bg-card/20 backdrop-blur-3xl border-2 border-border/60 p-14 rounded-[3rem] w-full max-w-5xl grid grid-cols-2 gap-12 shadow-xl shadow-emerald-500/30 relative mt-6 overflow-hidden">
+                <div className="absolute top-0 right-0 bg-primary text-primary-foreground font-black px-8 py-3 rounded-tr-[3rem] rounded-bl-[2.5rem] text-xl font-mono shadow-xl">
+                  {idulFitri.keterangan || "1 Syawal"}
+                </div>
+                
+                <div className="flex flex-col gap-10 justify-center mt-6">
+                  <div className="flex items-center gap-6">
+                    <div className="p-5 bg-muted rounded-2xl text-primary border-2 border-border/50"><CalendarDays className="h-10 w-10" /></div>
+                    <div>
+                      <p className="text-foreground/70 text-lg font-black uppercase tracking-widest">Tanggal Pelaksanaan</p>
+                      <p className="text-3xl font-black text-foreground mt-1">{idulFitri.tanggal}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-6">
+                    <div className="p-5 bg-muted rounded-2xl text-primary border-2 border-border/50"><Clock className="h-10 w-10" /></div>
+                    <div>
+                      <p className="text-foreground/70 text-lg font-black uppercase tracking-widest">Waktu Mulai</p>
+                      <p className="text-3xl font-black font-mono text-foreground mt-1">{idulFitri.waktu} WITA</p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex flex-col gap-10 mt-6">
+                  <div className="bg-muted/40 p-6 rounded-3xl border-2 border-border">
+                    <p className="text-foreground/70 text-lg font-black uppercase tracking-widest">Imam Sholat</p>
+                    <p className="text-4xl font-black text-foreground mt-2">{idulFitri.imam}</p>
+                  </div>
+                  <div className="bg-muted/40 p-6 rounded-3xl border-2 border-border">
+                    <p className="text-foreground/70 text-lg font-black uppercase tracking-widest">Khatib Sholat</p>
+                    <p className="text-4xl font-black text-foreground mt-2">{idulFitri.khatib}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
         </div>
       </main>
 
       {/* FOOTER SECTION: RUNNING TEXT MARQUEE */}
-      <footer className="relative z-10 mt-4 border-t-2 border-border/60 pt-4 flex items-center gap-4 shrink-0">
-        <div className="bg-transparent text-foreground font-black px-6 py-3 rounded-2xl flex items-center gap-3 shrink-0 text-xl tracking-widest uppercase border-r-2 border-border/50 rounded-r-none">
-          <Volume2 className="h-8 w-8 text-primary animate-pulse" /> PESAN HARI INI:
+      <footer className="relative z-10 flex items-center gap-4 shrink-0 mt-2">
+        <div className="bg-primary text-primary-foreground font-black px-8 py-5 rounded-[2rem] flex items-center gap-4 shrink-0 text-2xl tracking-widest uppercase shadow-xl shadow-primary/30 z-20">
+          <Megaphone className="h-8 w-8 animate-pulse" /> INFORMASI MASJID
         </div>
-        <div className="flex-1 bg-card/20 backdrop-blur-3xl border-2 border-border/60 rounded-2xl p-2 h-16 flex items-center overflow-hidden shadow-inner">
-          <div className="animate-marquee text-foreground font-bold text-2xl tracking-widest flex items-center gap-16 whitespace-nowrap">
+        <div className="flex-1 bg-card/30 backdrop-blur-3xl border-4 border-border/80 rounded-[2.5rem] p-3 h-20 flex items-center overflow-hidden shadow-2xl relative -ml-8 pl-12">
+          <div className="absolute inset-y-0 left-8 w-16 bg-gradient-to-r from-card/30 to-transparent z-10"></div>
+          <div className="absolute inset-y-0 right-0 w-32 bg-gradient-to-l from-card/80 to-transparent z-10"></div>
+          <div className="animate-marquee text-foreground font-bold text-4xl tracking-widest flex items-center gap-16 whitespace-nowrap drop-shadow-md">
+            <span className="text-primary font-black text-4xl">★</span>
             <span>{settings.running_text}</span>
-            <span className="text-primary font-serif font-black text-3xl">✦ {settings.nama_aplikasi} ✦</span>
-            <span>{settings.running_text}</span>
+            <span className="text-primary font-black text-4xl">★</span>
+            <span>SELAMAT DATANG DI {settings.nama_aplikasi.toUpperCase()}</span>
+            <span className="text-primary font-black text-4xl">★</span>
+            <span>MARI JAGA KEBERSIHAN DAN KEKHUSYUKAN MASJID</span>
+            <span className="text-primary font-black text-4xl">★</span>
           </div>
         </div>
       </footer>

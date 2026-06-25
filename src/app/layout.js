@@ -1,6 +1,7 @@
 import { Plus_Jakarta_Sans, Amiri } from "next/font/google";
 import "./globals.css";
 import PwaRegister from "@/components/PwaRegister";
+import { Toaster } from "react-hot-toast";
 
 const jakarta = Plus_Jakarta_Sans({
   variable: "--font-jakarta",
@@ -54,6 +55,7 @@ export default function RootLayout({ children }) {
     >
       <body className="font-sans select-none bg-background text-foreground">
         <PwaRegister />
+        <Toaster position="top-center" toastOptions={{ duration: 4000, style: { borderRadius: '1rem', fontWeight: '500' } }} />
         {children}
       </body>
     </html>
