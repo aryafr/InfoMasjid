@@ -1,5 +1,5 @@
 import { initializeApp, getApps, getApp } from 'firebase/app';
-import { getFirestore } from 'firebase/firestore';
+import { getFirestore, enableIndexedDbPersistence } from 'firebase/firestore';
 import { getAuth } from 'firebase/auth';
 
 const firebaseConfig = {
@@ -19,5 +19,17 @@ const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
 
 const db = getFirestore(app);
 const auth = getAuth(app);
+
+// Enable Offline Persistence (Offline-First) hanya di sisi Client (Browser)
+if (typeof window !== 'undefined' && !isMockFirebase) {
+  enableIndexedDbPersistence(db)
+    .catch((err) => {
+      if (err.code === 'failed-precondition') {
+        console.warn('Firebase Persistence: Tab ganda terdeteksi. Offline mode hanya aktif di satu tab utama.');
+      } else if (err.code === 'unimplemented') {
+        console.warn('Firebase Persistence: Browser ini tidak mendukung mode offline.');
+      }
+    });
+}
 
 export { app, db, auth, isMockFirebase };
