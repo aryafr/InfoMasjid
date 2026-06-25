@@ -176,11 +176,12 @@ export default function AdminPage() {
   const [settingsForm, setSettingsForm] = useState({
     nama_aplikasi: "",
     running_text: "",
+    running_text_speed: 45,
     rotation_interval: 12,
     rotation_enabled: true,
     rotation_pages: [],
-    jeda_iqamah: 10,
-    durasi_sholat: 15,
+    jeda_iqamah: { subuh: 10, dzuhur: 10, ashar: 10, maghrib: 10, isya: 10 },
+    durasi_sholat: { subuh: 15, dzuhur: 15, ashar: 15, maghrib: 15, isya: 15 },
     tema: "theme-emerald",
     murottal: { enabled: false, url: "" },
     posters: []
@@ -305,7 +306,29 @@ export default function AdminPage() {
 
     const unsubSettings = subscribeToSettings(masjidId, (data) => {
       setSettings(data);
-      if (data) setSettingsForm(data);
+      if (data) {
+        const newData = { ...data };
+        if (typeof newData.jeda_iqamah === 'number') {
+           newData.jeda_iqamah = {
+             subuh: newData.jeda_iqamah, dzuhur: newData.jeda_iqamah, ashar: newData.jeda_iqamah, maghrib: newData.jeda_iqamah, isya: newData.jeda_iqamah
+           };
+        }
+        if (!newData.jeda_iqamah) {
+           newData.jeda_iqamah = { subuh: 10, dzuhur: 10, ashar: 10, maghrib: 10, isya: 10 };
+        }
+        if (typeof newData.durasi_sholat === 'number') {
+           newData.durasi_sholat = {
+             subuh: newData.durasi_sholat, dzuhur: newData.durasi_sholat, ashar: newData.durasi_sholat, maghrib: newData.durasi_sholat, isya: newData.durasi_sholat
+           };
+        }
+        if (!newData.durasi_sholat) {
+           newData.durasi_sholat = { subuh: 15, dzuhur: 15, ashar: 15, maghrib: 15, isya: 15 };
+        }
+        if (!newData.running_text_speed) {
+           newData.running_text_speed = 45;
+        }
+        setSettingsForm(newData);
+      }
     });
     const unsubJadwal = subscribeToJadwal(masjidId, (data) => {
       setJadwal(data);
@@ -1120,9 +1143,9 @@ export default function AdminPage() {
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+                  <div className="grid grid-cols-2 gap-6">
                     <div>
-                      <label className="text-sm text-foreground font-medium mb-2 block">Interval Rotasi (Detik)</label>
+                      <label className="text-sm text-foreground font-medium mb-2 block">Interval Rotasi Slide (Detik)</label>
                       <input 
                         type="number" 
                         value={settingsForm.rotation_interval}
@@ -1130,26 +1153,49 @@ export default function AdminPage() {
                         className="w-full bg-input/50 border border-border rounded-xl px-4 py-3 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary text-foreground transition-shadow font-mono"
                       />
                     </div>
-                    
                     <div>
-                      <label className="text-sm text-foreground font-medium mb-2 block">Jeda Iqamah (Menit)</label>
+                      <label className="text-sm text-foreground font-medium mb-2 block">Kecepatan Running Text (Detik - Makin Kecil Makin Cepat)</label>
                       <input 
                         type="number" 
-                        value={settingsForm.jeda_iqamah ?? 10}
-                        onChange={(e) => setSettingsForm({ ...settingsForm, jeda_iqamah: Number(e.target.value) })}
+                        value={settingsForm.running_text_speed ?? 45}
+                        onChange={(e) => setSettingsForm({ ...settingsForm, running_text_speed: Number(e.target.value) })}
                         className="w-full bg-input/50 border border-border rounded-xl px-4 py-3 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary text-foreground transition-shadow font-mono"
                       />
                     </div>
+                  </div>
 
-                    <div>
-                      <label className="text-sm text-foreground font-medium mb-2 block">Durasi Sholat (Menit)</label>
-                      <input 
-                        type="number" 
-                        value={settingsForm.durasi_sholat ?? 15}
-                        onChange={(e) => setSettingsForm({ ...settingsForm, durasi_sholat: Number(e.target.value) })}
-                        className="w-full bg-input/50 border border-border rounded-xl px-4 py-3 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary text-foreground transition-shadow font-mono"
-                      />
+                  <div className="border-t border-border/50 pt-6 mt-4">
+                    <h3 className="text-lg font-bold text-foreground mb-4">Pengaturan Waktu Sholat (Menit)</h3>
+                    <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+                      {['subuh', 'dzuhur', 'ashar', 'maghrib', 'isya'].map((waktu) => (
+                        <div key={waktu} className="bg-muted/30 p-4 rounded-2xl border border-border/50">
+                           <label className="text-sm font-bold text-foreground capitalize mb-3 block">{waktu}</label>
+                           <div className="flex flex-col gap-3">
+                             <div>
+                               <label className="text-xs text-muted-foreground mb-1 block">Jeda Iqamah</label>
+                               <input 
+                                 type="number" 
+                                 value={settingsForm.jeda_iqamah?.[waktu] ?? 10}
+                                 onChange={(e) => setSettingsForm({ ...settingsForm, jeda_iqamah: { ...(settingsForm.jeda_iqamah || {}), [waktu]: Number(e.target.value) } })}
+                                 className="w-full bg-input/50 border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-primary text-foreground font-mono"
+                               />
+                             </div>
+                             <div>
+                               <label className="text-xs text-muted-foreground mb-1 block">Durasi Sholat</label>
+                               <input 
+                                 type="number" 
+                                 value={settingsForm.durasi_sholat?.[waktu] ?? 15}
+                                 onChange={(e) => setSettingsForm({ ...settingsForm, durasi_sholat: { ...(settingsForm.durasi_sholat || {}), [waktu]: Number(e.target.value) } })}
+                                 className="w-full bg-input/50 border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-primary text-foreground font-mono"
+                               />
+                             </div>
+                           </div>
+                        </div>
+                      ))}
                     </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 gap-6 mt-4">
 
                     <div>
                       <label className="text-sm text-foreground font-medium mb-3 block">Status Rotasi Otomatis</label>

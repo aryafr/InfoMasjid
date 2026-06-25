@@ -153,6 +153,19 @@ export default function LandingPage() {
               <div className="w-full h-2 bg-zinc-700"></div>
             </div>
           </div>
+
+          {/* Social Proof Marquee */}
+          <div className="mt-16 overflow-hidden relative w-full opacity-80 animate-fade-in" style={{ animationDelay: '700ms' }}>
+            <div className="absolute inset-y-0 left-0 w-20 bg-gradient-to-r from-background to-transparent z-10"></div>
+            <div className="absolute inset-y-0 right-0 w-20 bg-gradient-to-l from-background to-transparent z-10"></div>
+            <div className="flex animate-marquee whitespace-nowrap items-center gap-16 py-4">
+              <span className="text-xl font-semibold text-muted-foreground">🌟 Dipercaya oleh lebih dari <span className="text-foreground font-black">50+ Masjid</span> di Seluruh Indonesia</span>
+              <span className="text-xl font-semibold text-muted-foreground">🌟 Dipercaya oleh lebih dari <span className="text-foreground font-black">50+ Masjid</span> di Seluruh Indonesia</span>
+              <span className="text-xl font-semibold text-muted-foreground">🌟 Dipercaya oleh lebih dari <span className="text-foreground font-black">50+ Masjid</span> di Seluruh Indonesia</span>
+              <span className="text-xl font-semibold text-muted-foreground">🌟 Dipercaya oleh lebih dari <span className="text-foreground font-black">50+ Masjid</span> di Seluruh Indonesia</span>
+              <span className="text-xl font-semibold text-muted-foreground">🌟 Dipercaya oleh lebih dari <span className="text-foreground font-black">50+ Masjid</span> di Seluruh Indonesia</span>
+            </div>
+          </div>
         </section>
 
         {/* FEATURES SECTION (BENTO BOX STYLE) */}
@@ -175,22 +188,29 @@ export default function LandingPage() {
                 <p className="text-muted-foreground">Ubah tema layar, atur durasi rotasi slide, tambahkan poster kegiatan, dan jalankan running text dari satu tempat.</p>
               </div>
               <div className="mt-8 flex-1 bg-card rounded-t-2xl border-x border-t border-border/50 shadow-2xl relative translate-y-4 group-hover:translate-y-0 transition-transform duration-500 p-4">
-                <div className="flex gap-2 mb-4 border-b border-border pb-2">
-                  <div className="w-20 h-2 bg-primary rounded-full"></div>
-                  <div className="w-16 h-2 bg-muted rounded-full"></div>
+                <div className="flex gap-4 mb-4 border-b border-border pb-2">
+                  <div className="text-xs font-bold text-primary flex items-center gap-1"><Monitor className="w-3.5 h-3.5"/> Tampilan TV</div>
+                  <div className="text-xs font-bold text-muted-foreground flex items-center gap-1 opacity-50"><Smartphone className="w-3.5 h-3.5"/> Ponsel</div>
                 </div>
                 <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <div className="h-3 w-1/2 bg-muted rounded-full"></div>
-                    <div className="h-10 w-full bg-input/50 rounded-lg"></div>
+                  <div className="space-y-1.5">
+                    <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Tema Warna</div>
+                    <div className="h-10 w-full bg-emerald-500/10 border border-emerald-500/20 rounded-lg flex items-center px-3">
+                      <div className="w-4 h-4 rounded-full bg-emerald-500 mr-2 shadow-sm"></div>
+                      <span className="text-xs font-bold text-emerald-700 dark:text-emerald-400">Emerald</span>
+                    </div>
                   </div>
-                  <div className="space-y-2">
-                    <div className="h-3 w-1/3 bg-muted rounded-full"></div>
-                    <div className="h-10 w-full bg-input/50 rounded-lg"></div>
+                  <div className="space-y-1.5">
+                    <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Rotasi Slide</div>
+                    <div className="h-10 w-full bg-input/50 border border-border/50 rounded-lg flex items-center px-3">
+                       <RefreshCw className="w-3.5 h-3.5 text-muted-foreground mr-2"/>
+                       <span className="text-xs font-mono font-bold">12 Detik</span>
+                    </div>
                   </div>
                 </div>
-                <div className="mt-4 h-24 w-full bg-primary/5 border border-dashed border-primary/30 rounded-xl flex items-center justify-center text-primary text-sm font-medium">
-                  + Upload Poster Slide
+                <div className="mt-4 h-24 w-full bg-gradient-to-br from-primary/10 to-primary/5 border border-dashed border-primary/40 rounded-xl flex flex-col items-center justify-center text-primary transition-all hover:bg-primary/20 cursor-pointer">
+                  <Camera className="w-6 h-6 mb-1 opacity-80" />
+                  <span className="text-sm font-bold opacity-90">Upload Poster Slide</span>
                 </div>
               </div>
             </div>
@@ -203,9 +223,10 @@ export default function LandingPage() {
               </div>
               <div className="mt-8 flex-1 bg-card rounded-t-2xl border-x border-t border-border/50 shadow-2xl relative translate-y-4 group-hover:translate-y-0 transition-transform duration-500 p-5 flex flex-col gap-3">
                 {['Subuh', 'Dzuhur', 'Ashar', 'Maghrib', 'Isya'].map((time, i) => (
-                  <div key={i} className="flex justify-between items-center p-2 rounded-lg bg-muted/20 border border-border/40">
-                    <span className="text-xs font-bold text-foreground/70">{time}</span>
-                    <span className="text-sm font-mono font-bold text-primary">{`04:${10 + i * 3}`}</span>
+                  <div key={i} className="flex justify-between items-center p-3 rounded-xl bg-card border border-border/50 shadow-sm relative overflow-hidden group-hover:border-primary/30 transition-colors">
+                    <div className="absolute left-0 top-0 bottom-0 w-1 bg-primary/40"></div>
+                    <span className="text-sm font-bold text-foreground/80 pl-2">{time}</span>
+                    <span className="text-sm font-mono font-bold text-primary bg-primary/10 px-2 py-1 rounded-md">{`04:${10 + i * 3}`}</span>
                   </div>
                 ))}
               </div>
@@ -218,18 +239,18 @@ export default function LandingPage() {
                 <p className="text-muted-foreground">Catat pemasukan & pengeluaran. Saldo otomatis terhitung transparan.</p>
               </div>
               <div className="mt-8 flex-1 bg-card rounded-t-2xl border-x border-t border-border/50 shadow-2xl relative translate-y-4 group-hover:translate-y-0 transition-transform duration-500 p-4">
-                <div className="flex justify-between items-center mb-4">
-                  <div className="h-6 w-24 bg-primary/20 rounded-md"></div>
-                  <div className="h-6 w-8 bg-primary/20 rounded-md"></div>
+                <div className="flex justify-between items-center mb-5">
+                  <div className="flex items-center gap-2"><Wallet className="w-5 h-5 text-emerald-500"/><span className="font-bold text-sm">Saldo Total</span></div>
+                  <div className="font-mono font-black text-lg tracking-tight">Rp 12.500.000</div>
                 </div>
                 <div className="space-y-3">
-                  <div className="flex justify-between items-center pb-2 border-b border-border/50">
-                    <div className="flex flex-col gap-1"><div className="h-3 w-16 bg-muted rounded-full"></div><div className="h-2 w-10 bg-muted/50 rounded-full"></div></div>
-                    <div className="text-emerald-500 text-xs font-bold">+Rp 500rb</div>
+                  <div className="flex justify-between items-center pb-3 border-b border-border/50">
+                    <div className="flex flex-col"><span className="text-sm font-bold text-foreground">Infaq Jumat</span><span className="text-[10px] text-muted-foreground uppercase font-bold">12 Okt 2026</span></div>
+                    <div className="text-emerald-500 text-sm font-black bg-emerald-500/10 px-2 py-1 rounded-md border border-emerald-500/20">+ Rp 500.000</div>
                   </div>
-                  <div className="flex justify-between items-center pb-2 border-b border-border/50">
-                    <div className="flex flex-col gap-1"><div className="h-3 w-20 bg-muted rounded-full"></div><div className="h-2 w-10 bg-muted/50 rounded-full"></div></div>
-                    <div className="text-red-500 text-xs font-bold">-Rp 150rb</div>
+                  <div className="flex justify-between items-center pb-1">
+                    <div className="flex flex-col"><span className="text-sm font-bold text-foreground">Operasional Listrik</span><span className="text-[10px] text-muted-foreground uppercase font-bold">14 Okt 2026</span></div>
+                    <div className="text-red-500 text-sm font-black bg-red-500/10 px-2 py-1 rounded-md border border-red-500/20">- Rp 150.000</div>
                   </div>
                 </div>
               </div>
@@ -242,13 +263,15 @@ export default function LandingPage() {
                 <p className="text-muted-foreground">Buat pengumuman kajian atau kegiatan lainnya dengan mudah. Layar akan otomatis menampilkannya berurutan sesuai tanggal.</p>
               </div>
               <div className="mt-8 flex-1 bg-card rounded-t-2xl border-x border-t border-border/50 shadow-2xl relative translate-y-4 group-hover:translate-y-0 transition-transform duration-500 p-5 flex gap-4">
-                <div className="flex-1 bg-primary/5 border border-primary/10 rounded-xl p-4">
-                  <div className="h-3 w-24 bg-primary/40 rounded-full mb-3"></div>
-                  <div className="h-2 w-full bg-muted rounded-full mb-2"></div>
-                  <div className="h-2 w-full bg-muted rounded-full mb-2"></div>
-                  <div className="h-2 w-2/3 bg-muted rounded-full"></div>
+                <div className="flex-1 bg-gradient-to-br from-primary/10 to-transparent border border-primary/20 rounded-xl p-4 shadow-sm relative overflow-hidden group-hover:border-primary/40 transition-colors">
+                  <div className="absolute top-0 right-0 bg-primary/20 text-primary text-[10px] font-bold px-2 py-0.5 rounded-bl-lg">Kajian Rutin</div>
+                  <h4 className="text-sm font-bold text-foreground mb-1 mt-2">Kajian Fiqih Muamalah</h4>
+                  <p className="text-xs text-muted-foreground mb-3 line-clamp-2">Bersama Ustadz Dr. Ahmad, membahas kitab Bulughul Maram bab Muamalah.</p>
+                  <div className="flex items-center gap-2 text-[10px] font-bold text-primary bg-primary/10 w-fit px-2 py-1 rounded">
+                    <Clock className="w-3 h-3" /> Ba'da Maghrib
+                  </div>
                 </div>
-                <div className="flex-1 bg-input/20 border border-border/50 rounded-xl p-4 opacity-50">
+                <div className="flex-1 bg-card border border-border/50 rounded-xl p-4 opacity-50 scale-95 origin-left">
                   <div className="h-3 w-20 bg-muted rounded-full mb-3"></div>
                   <div className="h-2 w-full bg-muted/50 rounded-full mb-2"></div>
                   <div className="h-2 w-4/5 bg-muted/50 rounded-full"></div>
@@ -264,13 +287,19 @@ export default function LandingPage() {
               </div>
               <div className="mt-8 flex-1 bg-card rounded-t-2xl border-x border-t border-border/50 shadow-2xl relative translate-y-4 group-hover:translate-y-0 transition-transform duration-500 p-5">
                 <div className="grid grid-cols-2 gap-4">
-                  <div className="bg-muted/20 p-3 rounded-xl border border-border/40">
-                    <div className="text-[10px] text-primary font-bold uppercase mb-1">Khatib</div>
-                    <div className="h-3 w-full bg-muted rounded-full"></div>
+                  <div className="bg-gradient-to-b from-card to-muted/20 p-4 rounded-xl border border-border/50 shadow-sm relative overflow-hidden group-hover:border-primary/30 transition-colors">
+                    <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center mb-3">
+                       <MessageCircle className="w-4 h-4 text-primary" />
+                    </div>
+                    <div className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider mb-1">Khatib</div>
+                    <div className="text-sm font-bold text-foreground">Ust. Abdul Somad</div>
                   </div>
-                  <div className="bg-muted/20 p-3 rounded-xl border border-border/40">
-                    <div className="text-[10px] text-primary font-bold uppercase mb-1">Imam</div>
-                    <div className="h-3 w-3/4 bg-muted rounded-full"></div>
+                  <div className="bg-gradient-to-b from-card to-muted/20 p-4 rounded-xl border border-border/50 shadow-sm relative overflow-hidden group-hover:border-primary/30 transition-colors">
+                    <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center mb-3">
+                       <CheckCircle className="w-4 h-4 text-primary" />
+                    </div>
+                    <div className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider mb-1">Imam</div>
+                    <div className="text-sm font-bold text-foreground">Syekh Ali Jaber</div>
                   </div>
                 </div>
               </div>
@@ -283,10 +312,14 @@ export default function LandingPage() {
                 <p className="text-muted-foreground">Tampilkan barcode QRIS dan rekening untuk jamaah.</p>
               </div>
               <div className="mt-6 flex flex-1 items-center justify-center">
-                <div className="w-24 h-24 bg-primary/5 border-2 border-dashed border-primary/30 rounded-xl flex items-center justify-center relative translate-y-2 group-hover:translate-y-0 transition-transform duration-500">
-                  <div className="w-16 h-16 bg-primary/20 rounded-sm"></div>
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <div className="w-4 h-4 bg-primary rounded-sm"></div>
+                <div className="w-32 h-32 bg-white rounded-2xl p-2 shadow-xl shadow-primary/10 relative translate-y-2 group-hover:translate-y-0 group-hover:scale-105 transition-all duration-500 border border-border">
+                  <div className="w-full h-full border-4 border-black rounded-xl relative flex items-center justify-center">
+                    <div className="absolute top-2 left-2 w-6 h-6 border-2 border-black"></div>
+                    <div className="absolute top-2 right-2 w-6 h-6 border-2 border-black"></div>
+                    <div className="absolute bottom-2 left-2 w-6 h-6 border-2 border-black"></div>
+                    <div className="w-8 h-8 bg-primary rounded-md shadow-inner flex items-center justify-center">
+                       <Wallet className="w-4 h-4 text-white" />
+                    </div>
                   </div>
                 </div>
               </div>
@@ -300,13 +333,19 @@ export default function LandingPage() {
               </div>
               <div className="mt-8 flex-1 bg-card rounded-t-2xl border-x border-t border-border/50 shadow-2xl relative translate-y-4 group-hover:translate-y-0 transition-transform duration-500 p-5">
                 <div className="space-y-3">
-                  <div className="bg-muted/20 p-3 rounded-xl border border-border/40 flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary text-xs font-bold">IF</div>
-                    <div className="h-3 w-1/2 bg-muted rounded-full"></div>
+                  <div className="bg-card p-3 rounded-xl border border-border/50 shadow-sm flex items-center gap-4 group-hover:border-primary/30 transition-colors">
+                    <div className="w-10 h-10 rounded-full bg-emerald-500/10 flex items-center justify-center text-emerald-600 font-black text-sm">IF</div>
+                    <div>
+                      <div className="text-sm font-bold text-foreground mb-0.5">Idul Fitri 1447 H</div>
+                      <div className="text-xs text-muted-foreground">Khatib: Ust. Hanan Attaki</div>
+                    </div>
                   </div>
-                  <div className="bg-muted/20 p-3 rounded-xl border border-border/40 flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary text-xs font-bold">IA</div>
-                    <div className="h-3 w-2/3 bg-muted rounded-full"></div>
+                  <div className="bg-card p-3 rounded-xl border border-border/50 shadow-sm flex items-center gap-4 group-hover:border-primary/30 transition-colors">
+                    <div className="w-10 h-10 rounded-full bg-blue-500/10 flex items-center justify-center text-blue-600 font-black text-sm">IA</div>
+                    <div>
+                      <div className="text-sm font-bold text-foreground mb-0.5">Idul Adha 1447 H</div>
+                      <div className="text-xs text-muted-foreground">Khatib: Ust. Adi Hidayat</div>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -333,7 +372,7 @@ export default function LandingPage() {
                 {pricing?.is_discount_active ? (
                   <>
                     <div className="flex items-end gap-1">
-                      <span className="text-5xl font-extrabold tracking-tight">Rp {Math.floor(pricing.berkah.discounted_price / 12 / 1000)}rb</span>
+                      <span className="text-5xl font-extrabold tracking-tight">Rp {Math.ceil(pricing.berkah.discounted_price / 12 / 1000)}rb</span>
                       <span className="text-muted-foreground font-medium mb-1">/ bulan</span>
                     </div>
                     <div className="text-sm font-medium mt-2 flex items-center gap-2">
@@ -344,7 +383,7 @@ export default function LandingPage() {
                 ) : (
                   <>
                     <div className="flex items-end gap-1">
-                      <span className="text-5xl font-extrabold tracking-tight">Rp {pricing?.berkah?.original_price ? Math.floor(pricing.berkah.original_price / 12 / 1000) : 20}rb</span>
+                      <span className="text-5xl font-extrabold tracking-tight">Rp {pricing?.berkah?.original_price ? Math.ceil(pricing.berkah.original_price / 12 / 1000) : 21}rb</span>
                       <span className="text-muted-foreground font-medium mb-1">/ bulan</span>
                     </div>
                     <div className="text-sm text-primary font-medium mt-2">
@@ -390,7 +429,7 @@ export default function LandingPage() {
                 {pricing?.is_discount_active ? (
                   <>
                     <div className="flex items-end gap-1">
-                      <span className="text-5xl font-extrabold tracking-tight text-foreground">Rp {Math.floor(pricing.premium.discounted_price / 12 / 1000)}rb</span>
+                      <span className="text-5xl font-extrabold tracking-tight text-foreground">Rp {Math.ceil(pricing.premium.discounted_price / 12 / 1000)}rb</span>
                       <span className="text-foreground/70 font-medium mb-1">/ bulan</span>
                     </div>
                     <div className="text-sm font-medium mt-2 flex items-center gap-2">
@@ -401,7 +440,7 @@ export default function LandingPage() {
                 ) : (
                   <>
                     <div className="flex items-end gap-1">
-                      <span className="text-5xl font-extrabold tracking-tight text-foreground">Rp {pricing?.premium?.original_price ? Math.floor(pricing.premium.original_price / 12 / 1000) : 45}rb</span>
+                      <span className="text-5xl font-extrabold tracking-tight text-foreground">Rp {pricing?.premium?.original_price ? Math.ceil(pricing.premium.original_price / 12 / 1000) : 46}rb</span>
                       <span className="text-foreground/70 font-medium mb-1">/ bulan</span>
                     </div>
                     <div className="text-sm text-primary font-bold mt-2">
@@ -433,6 +472,35 @@ export default function LandingPage() {
                 <ChevronRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
               </button>
             </div>
+          </div>
+        </section>
+
+        {/* TESTIMONIALS SECTION */}
+        <section className="container mx-auto px-6 py-24 relative z-10">
+          <div className="text-center mb-16 animate-fade-in-up">
+            <h2 className="text-3xl md:text-5xl font-bold mb-4 tracking-tight">Suara dari DKM</h2>
+            <p className="text-muted-foreground text-lg max-w-2xl mx-auto">Alhamdulillah, InfoMasjid telah membantu banyak pengurus masjid menjadi lebih modern dan transparan.</p>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-6xl mx-auto">
+            {[
+              { text: "Sangat membantu transparansi dana jamaah. Layar TV terlihat elegan dan jamaah lebih percaya dengan laporan kas real-time.", author: "H. Abdullah", role: "Ketua DKM Masjid Raya" },
+              { text: "Dulu repot ubah jadwal jumat manual setiap minggu, sekarang cukup dari HP langsung tersinkron ke TV. Sangat praktis!", author: "Ust. Furqon", role: "Takmir Masjid Al-Ikhlas" },
+              { text: "Jamaah senang dengan desain layarnya. Sangat premium dan mewah, padahal biaya langganannya cuma seharga dua porsi bakso.", author: "Bpk. Rahmat", role: "Bendahara Masjid" }
+            ].map((t, i) => (
+              <div key={i} className="bg-card/40 backdrop-blur-sm border border-border/60 rounded-3xl p-6 flex flex-col justify-between hover:-translate-y-2 transition-transform duration-300 hover:shadow-xl hover:shadow-primary/5">
+                <div className="mb-6 relative">
+                  <div className="text-5xl text-primary/20 font-serif absolute -top-4 -left-2">"</div>
+                  <p className="text-foreground/80 italic relative z-10 pl-6">{t.text}</p>
+                </div>
+                <div className="flex items-center gap-3 border-t border-border/50 pt-4 mt-auto">
+                  <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center font-bold text-primary">{t.author[0]}</div>
+                  <div>
+                    <div className="font-bold text-sm text-foreground">{t.author}</div>
+                    <div className="text-xs text-muted-foreground">{t.role}</div>
+                  </div>
+                </div>
+              </div>
+            ))}
           </div>
         </section>
 

@@ -20,7 +20,8 @@ import {
   Megaphone,
   Maximize,
   AlertTriangle,
-  Settings
+  Settings,
+  Quote
 } from "lucide-react";
 import { 
   subscribeToSettings, 
@@ -84,6 +85,14 @@ function convertGDriveLink(url) {
   return url;
 }
 
+const FALLBACK_QUOTES = [
+  "“Barangsiapa yang menempuh suatu jalan untuk menuntut ilmu, maka Allah Swt. akan memudahkan baginya jalan menuju surga.” (HR. Muslim)",
+  "“Sebaik-baik kalian adalah orang yang belajar Al-Qur’an dan mengajarkannya.” (HR. Bukhari)",
+  "“Tidaklah suatu kaum berkumpul di salah satu rumah Allah membaca Kitabullah dan saling mengajarkan satu dan lainnya melainkan akan turun kepada mereka sakinah (ketenangan).” (HR. Muslim)",
+  "“Sesungguhnya shalat itu adalah fardhu yang ditentukan waktunya atas orang-orang yang beriman.” (QS. An-Nisa: 103)",
+  "“Jadikanlah sabar dan shalat sebagai penolongmu. Dan sesungguhnya yang demikian itu sungguh berat, kecuali bagi orang-orang yang khusyu'.” (QS. Al-Baqarah: 45)"
+];
+
 export default function MasjidDisplay() {
   const params = useParams();
   const masjidId = params.masjidId || 'demo-masjid';
@@ -126,6 +135,7 @@ export default function MasjidDisplay() {
   const [countdown, setCountdown] = useState(10);
   const [nextPrayer, setNextPrayer] = useState({ name: "", time: "", minutesLeft: 0, secondsLeft: 0 });
   const [activeSlides, setActiveSlides] = useState([]);
+  const currentSlide = activeSlides[currentSlideIndex] || { url: "welcome", name: "Dashboard" };
   const [isIqamahMode, setIsIqamahMode] = useState(false);
   const [isSholatMode, setIsSholatMode] = useState(false);
   const [isMenjelangSholat, setIsMenjelangSholat] = useState(false);
@@ -133,6 +143,7 @@ export default function MasjidDisplay() {
   const [isMurottalMode, setIsMurottalMode] = useState(false);
   const [videoFinished, setVideoFinished] = useState(false);
   const [audioUnlocked, setAudioUnlocked] = useState(false);
+  const [keuanganPage, setKeuanganPage] = useState(0);
 
   // 0. Unlock Audio on first interaction
   useEffect(() => {
@@ -167,35 +178,58 @@ export default function MasjidDisplay() {
 
   const [timeOffset, setTimeOffset] = useState(0);
 
+  const getJedaIqamah = (settings, prayerName) => {
+    if (!settings) return 10 * 60;
+    const w = prayerName.toLowerCase();
+    const v = settings.jeda_iqamah;
+    if (typeof v === 'object' && v[w] !== undefined) return v[w] * 60;
+    return (typeof v === 'number' ? v : 10) * 60;
+  };
+
+  const getDurasiSholat = (settings, prayerName) => {
+    if (!settings) return 15 * 60;
+    const w = prayerName.toLowerCase();
+    const v = settings.durasi_sholat;
+    if (typeof v === 'object' && v[w] !== undefined) return v[w] * 60;
+    return (typeof v === 'number' ? v : 15) * 60;
+  };
+
   const handleSimulate = (mode) => {
     if (!jadwal) return;
     const realNow = new Date();
     const currentRealSeconds = realNow.getHours() * 3600 + realNow.getMinutes() * 60 + realNow.getSeconds();
     
     const prayers = [
-      jadwal.Subuh, jadwal.Dzuhur, jadwal.Ashar, jadwal.Maghrib, jadwal.Isya
+      { name: "Subuh", timeStr: jadwal.Subuh },
+      { name: "Dzuhur", timeStr: jadwal.Dzuhur },
+      { name: "Ashar", timeStr: jadwal.Ashar },
+      { name: "Maghrib", timeStr: jadwal.Maghrib },
+      { name: "Isya", timeStr: jadwal.Isya }
     ];
     
-    const jedaIqamah = (settings?.jeda_iqamah ?? 10) * 60;
-    const durasiSholat = (settings?.durasi_sholat ?? 15) * 60;
-    const totalDuration = jedaIqamah + durasiSholat;
-
     let targetPrayerSeconds = null;
-    for (let timeStr of prayers) {
-      if (!timeStr) continue;
-      const [h, m] = timeStr.split(":").map(Number);
+    let selectedJeda = 10 * 60;
+    
+    for (let prayer of prayers) {
+      if (!prayer.timeStr) continue;
+      const [h, m] = prayer.timeStr.split(":").map(Number);
       const ps = h * 3600 + m * 60;
-      // We want to jump to the CURRENT or NEXT prayer
-      // If we are currently "before" it finishes, that's the one
+      
+      const jedaIqamah = getJedaIqamah(settings, prayer.name);
+      const durasiSholat = getDurasiSholat(settings, prayer.name);
+      const totalDuration = jedaIqamah + durasiSholat;
+
       if (currentRealSeconds < ps + totalDuration) {
         targetPrayerSeconds = ps;
+        selectedJeda = jedaIqamah;
         break;
       }
     }
     
-    if (targetPrayerSeconds === null && prayers[0]) {
-      const [h, m] = prayers[0].split(":").map(Number);
+    if (targetPrayerSeconds === null && prayers[0].timeStr) {
+      const [h, m] = prayers[0].timeStr.split(":").map(Number);
       targetPrayerSeconds = h * 3600 + m * 60 + 24 * 3600;
+      selectedJeda = getJedaIqamah(settings, prayers[0].name);
     }
     
     if (targetPrayerSeconds === null) return;
@@ -203,8 +237,8 @@ export default function MasjidDisplay() {
     let targetSeconds = currentRealSeconds;
     if (mode === 'menjelang') targetSeconds = targetPrayerSeconds - 10;
     if (mode === 'adzan') targetSeconds = targetPrayerSeconds;
-    if (mode === 'iqamah') targetSeconds = targetPrayerSeconds + jedaIqamah - 10;
-    if (mode === 'sholat') targetSeconds = targetPrayerSeconds + jedaIqamah;
+    if (mode === 'iqamah') targetSeconds = targetPrayerSeconds + selectedJeda - 10;
+    if (mode === 'sholat') targetSeconds = targetPrayerSeconds + selectedJeda;
     
     setTimeOffset(targetSeconds - currentRealSeconds);
   };
@@ -244,8 +278,8 @@ export default function MasjidDisplay() {
             const [h, m] = prayer.timeStr.split(":").map(Number);
             const prayerSeconds = h * 3600 + m * 60;
             
-            const jedaIqamah = (settings?.jeda_iqamah ?? 10) * 60; // in seconds
-            const durasiSholat = (settings?.durasi_sholat ?? 15) * 60; // in seconds
+            const jedaIqamah = getJedaIqamah(settings, prayer.name);
+            const durasiSholat = getDurasiSholat(settings, prayer.name);
             const totalDuration = jedaIqamah + durasiSholat;
 
             // If the prayer hasn't passed OR it passed but we're still in Iqamah/Sholat mode
@@ -461,6 +495,31 @@ export default function MasjidDisplay() {
     return () => clearInterval(timer);
   }, [settings, activeSlides]);
 
+  // 4.5 Keuangan Pagination Logic
+  useEffect(() => {
+    if (!currentSlide || currentSlide.url !== "keuangan") {
+      setKeuanganPage(0);
+      return;
+    }
+    
+    const sevenDaysAgo = new Date();
+    sevenDaysAgo.setHours(0, 0, 0, 0);
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+    const weeklyData = (keuangan || []).filter(item => {
+      if (!item.tanggal) return false;
+      return new Date(item.tanggal) >= sevenDaysAgo;
+    });
+    
+    const totalPages = Math.ceil(weeklyData.length / 4);
+    if (totalPages <= 1) return;
+
+    const timer = setInterval(() => {
+      setKeuanganPage((prev) => (prev + 1) % totalPages);
+    }, 5000);
+
+    return () => clearInterval(timer);
+  }, [currentSlide, keuangan]);
+
   // 5. Zero-Setup API Auto-Update
   useEffect(() => {
     if (!settings || !settings.auto_update.enabled || !jadwal) return;
@@ -594,12 +653,26 @@ export default function MasjidDisplay() {
     );
   }
 
-  const currentSlide = activeSlides[currentSlideIndex] || { url: "welcome", name: "Dashboard" };
+  // Remove currentSlide here since it's moved up
 
-  // Calculate financial sum
+  // Calculate financial sum (All-time)
   const totalPemasukan = (keuangan || []).reduce((sum, item) => sum + Number(item.pemasukan || 0), 0);
   const totalPengeluaran = (keuangan || []).reduce((sum, item) => sum + Number(item.pengeluaran || 0), 0);
   const saldo = totalPemasukan - totalPengeluaran;
+
+  // Calculate Weekly Financials (Last 7 Days)
+  const sevenDaysAgo = new Date();
+  sevenDaysAgo.setHours(0, 0, 0, 0);
+  sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+  
+  const keuanganMingguan = (keuangan || []).filter(item => {
+    if (!item.tanggal) return false;
+    const itemDate = new Date(item.tanggal);
+    return itemDate >= sevenDaysAgo;
+  });
+
+  const totalPemasukanMingguan = keuanganMingguan.reduce((sum, item) => sum + Number(item.pemasukan || 0), 0);
+  const totalPengeluaranMingguan = keuanganMingguan.reduce((sum, item) => sum + Number(item.pengeluaran || 0), 0);
 
   // Calculate breakdown for summary
   const breakdownPemasukan = (keuangan || []).filter(i => i.pemasukan > 0).reduce((acc, curr) => {
@@ -709,13 +782,13 @@ export default function MasjidDisplay() {
                 {isIqamahMode && (
                   <div className={`text-[16rem] font-mono font-black tabular-nums tracking-tighter drop-shadow-xl leading-none transition-colors duration-500 ${
                     (() => {
-                      const jeda = (settings?.jeda_iqamah ?? 10) * 60;
+                      const jeda = getJedaIqamah(settings, nextPrayer.name);
                       const remaining = jeda + nextPrayer.secondsLeft;
                       return remaining > 0 && remaining <= 10 ? "text-red-500 scale-110 animate-pulse" : "text-foreground";
                     })()
                   }`}>
                     {(() => {
-                      const jeda = (settings?.jeda_iqamah ?? 10) * 60;
+                      const jeda = getJedaIqamah(settings, nextPrayer.name);
                       const remaining = jeda + nextPrayer.secondsLeft;
                       const m = Math.floor(Math.max(0, remaining) / 60);
                       const s = Math.max(0, remaining) % 60;
@@ -842,9 +915,9 @@ export default function MasjidDisplay() {
             )}
           </div>
           
-          <div className="bg-card/20 backdrop-blur-3xl border-2 border-border/80 px-8 py-4 rounded-3xl shadow-2xl flex items-center gap-4 shadow-primary/5">
-            <Clock className="h-10 w-10 text-primary animate-pulse" />
-            <span className="text-6xl font-mono font-black tracking-tighter tabular-nums text-foreground">
+          <div className="bg-card/30 backdrop-blur-3xl border-4 border-border/80 px-10 py-5 rounded-[2.5rem] shadow-2xl flex items-center gap-6 shadow-primary/10">
+            <Clock className="h-12 w-12 text-primary animate-pulse" />
+            <span className="text-7xl font-mono font-black tracking-tighter tabular-nums text-foreground drop-shadow-lg">
               {time}
             </span>
           </div>
@@ -904,7 +977,7 @@ export default function MasjidDisplay() {
                     <p className="text-lg text-foreground/70 font-bold mt-2 uppercase tracking-wide">Khatib & Imam</p>
                   </div>
                   <div className="bg-muted/80 px-6 py-3 rounded-2xl border-2 border-border text-lg text-foreground font-bold tabular-nums">
-                    {sholatJumat?.tanggal || "Loading..."}
+                    {sholatJumat?.tanggal ? new Date(sholatJumat.tanggal).toLocaleDateString("id-ID", { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }) : "Loading..."}
                   </div>
                 </div>
               </div>
@@ -942,14 +1015,23 @@ export default function MasjidDisplay() {
                     <Volume2 className="h-6 w-6" /> Pengumuman Utama
                   </h3>
                   <div className="flex flex-col gap-3 overflow-hidden flex-1 justify-start">
-                    {(pengumuman || []).slice(0, 3).map((item) => (
-                      <div key={item.id} className="bg-muted/40 p-3 rounded-2xl border-l-[6px] border-primary flex items-start gap-4 shadow-sm">
-                        <div className="bg-background border-2 border-border/80 h-12 w-12 flex items-center justify-center rounded-2xl text-primary shrink-0 text-base font-black font-mono shadow-sm mt-0.5">
-                          {item.tanggal ? item.tanggal.substring(8,10) : <Megaphone className="h-5 w-5" />}
+                    {pengumuman && pengumuman.length > 0 ? (
+                      pengumuman.slice(0, 3).map((item) => (
+                        <div key={item.id} className="bg-muted/40 p-3 rounded-2xl border-l-[6px] border-primary flex items-start gap-4 shadow-sm">
+                          <div className="bg-background border-2 border-border/80 h-12 w-12 flex items-center justify-center rounded-2xl text-primary shrink-0 text-base font-black font-mono shadow-sm mt-0.5">
+                            {item.tanggal ? item.tanggal.substring(8,10) : <Megaphone className="h-5 w-5" />}
+                          </div>
+                          <p className="text-base text-foreground leading-snug font-semibold whitespace-pre-wrap">{item.isi}</p>
                         </div>
-                        <p className="text-base text-foreground leading-snug font-semibold whitespace-pre-wrap">{item.isi}</p>
+                      ))
+                    ) : (
+                      <div className="flex-1 flex flex-col items-center justify-center p-6 text-center">
+                        <Quote className="h-12 w-12 text-primary/30 mb-4" />
+                        <p className="text-xl text-foreground/80 font-serif italic leading-relaxed">
+                          {FALLBACK_QUOTES[new Date().getDay() % FALLBACK_QUOTES.length]}
+                        </p>
                       </div>
-                    ))}
+                    )}
                   </div>
                 </div>
 
@@ -1007,8 +1089,8 @@ export default function MasjidDisplay() {
           {currentSlide.url === "keuangan" && (
             <div className="animate-fade-in flex flex-col gap-8 w-full h-full justify-between max-w-7xl mx-auto">
               <div className="text-center mb-2">
-                <h2 className="text-5xl font-black text-foreground tracking-widest uppercase drop-shadow-md">Rincian Keuangan Masjid</h2>
-                <p className="text-2xl text-foreground/70 font-bold mt-2 tracking-wide">Laporan mutasi kas masuk dan kas keluar ter-update</p>
+                <h2 className="text-5xl font-black text-foreground tracking-widest uppercase drop-shadow-md">Mutasi Keuangan Mingguan</h2>
+                <p className="text-2xl text-foreground/70 font-bold mt-2 tracking-wide">Laporan mutasi kas masuk dan kas keluar dalam 7 hari terakhir</p>
               </div>
 
               <div className="bg-card/20 backdrop-blur-3xl border-2 border-border/60 rounded-[2rem] overflow-hidden flex-1 flex flex-col shadow-xl shadow-emerald-500/30">
@@ -1021,42 +1103,58 @@ export default function MasjidDisplay() {
                       <th className="p-6 w-[20%] text-right">Pengeluaran</th>
                     </tr>
                   </thead>
-                  <tbody className="flex flex-col flex-1 text-2xl divide-y-2 divide-border/40">
-                    {(keuangan || []).slice(0, 4).map((item, index) => (
-                      <tr key={item.id} className={`flex w-full items-center transition-colors flex-1 ${index % 2 === 1 ? 'bg-muted/30' : 'bg-transparent'}`}>
-                        <td className="p-6 w-[15%] text-foreground/70 font-mono font-bold tabular-nums">{item.tanggal}</td>
-                        <td className="p-6 w-[45%] font-bold text-foreground flex flex-col justify-center items-start gap-2 h-full">
-                          <span className="text-xl line-clamp-1 leading-snug">{item.deskripsi}</span>
-                          {item.kategori && (
-                            <span className="text-sm font-black uppercase tracking-widest px-3 py-1 bg-secondary/30 text-secondary-foreground rounded-lg border border-secondary/50 inline-block mt-1">
-                              {item.kategori}
-                            </span>
-                          )}
-                        </td>
-                        <td className="p-6 w-[20%] text-right text-primary font-black font-mono tabular-nums tracking-tight">
-                          {item.pemasukan ? `Rp ${Number(item.pemasukan).toLocaleString("id-ID")}` : "-"}
-                        </td>
-                        <td className="p-8 w-[20%] text-right text-destructive font-black font-mono tabular-nums tracking-tight">
-                          {item.pengeluaran ? `Rp ${Number(item.pengeluaran).toLocaleString("id-ID")}` : "-"}
-                        </td>
-                      </tr>
-                    ))}
+                  <tbody className="flex flex-col flex-1 text-2xl divide-y-2 divide-border/40 relative overflow-hidden">
+                    {keuanganMingguan.length === 0 ? (
+                      <div className="flex-1 flex flex-col items-center justify-center text-foreground/50 h-full w-full absolute inset-0">
+                         <span className="text-3xl font-bold font-serif italic mb-2">Belum ada mutasi baru</span>
+                         <span className="text-xl">Tidak ada transaksi kas dalam 7 hari terakhir.</span>
+                      </div>
+                    ) : (
+                      keuanganMingguan.slice(keuanganPage * 4, (keuanganPage + 1) * 4).map((item, index) => (
+                        <tr key={item.id} className={`flex w-full items-center transition-colors flex-1 animate-fade-in ${index % 2 === 1 ? 'bg-muted/30' : 'bg-transparent'}`}>
+                          <td className="p-6 w-[15%] text-foreground/70 font-mono font-bold tabular-nums">{item.tanggal}</td>
+                          <td className="p-6 w-[45%] font-bold text-foreground flex flex-col justify-center items-start gap-2 h-full">
+                            <span className="text-xl line-clamp-1 leading-snug">{item.deskripsi}</span>
+                            {item.kategori && (
+                              <span className="text-sm font-black uppercase tracking-widest px-3 py-1 bg-secondary/30 text-secondary-foreground rounded-lg border border-secondary/50 inline-block mt-1">
+                                {item.kategori}
+                              </span>
+                            )}
+                          </td>
+                          <td className="p-6 w-[20%] text-right text-primary font-black font-mono tabular-nums tracking-tight">
+                            {item.pemasukan ? `Rp ${Number(item.pemasukan).toLocaleString("id-ID")}` : "-"}
+                          </td>
+                          <td className="p-8 w-[20%] text-right text-destructive font-black font-mono tabular-nums tracking-tight">
+                            {item.pengeluaran ? `Rp ${Number(item.pengeluaran).toLocaleString("id-ID")}` : "-"}
+                          </td>
+                        </tr>
+                      ))
+                    )}
                   </tbody>
                 </table>
               </div>
 
               {/* Summary strip */}
-              <div className="grid grid-cols-3 gap-6">
+              <div className="grid grid-cols-3 gap-6 relative">
+                {/* Pagination Dots indicator */}
+                {keuanganMingguan.length > 4 && (
+                  <div className="absolute -top-6 left-1/2 -translate-x-1/2 flex items-center gap-2">
+                     {Array.from({ length: Math.ceil(keuanganMingguan.length / 4) }).map((_, i) => (
+                        <div key={i} className={`h-2 rounded-full transition-all duration-500 ${i === keuanganPage ? "w-8 bg-primary" : "w-2 bg-primary/20"}`} />
+                     ))}
+                  </div>
+                )}
+                
                 <div className="bg-primary/10 border-2 border-primary/20 rounded-3xl px-8 py-6 flex flex-col items-start justify-center gap-2 shadow-lg">
-                  <span className="text-lg text-primary font-black uppercase tracking-widest">Total Pemasukan</span>
-                  <span className="text-4xl font-black font-mono text-primary tabular-nums tracking-tighter">Rp {totalPemasukan.toLocaleString("id-ID")}</span>
+                  <span className="text-lg text-primary font-black uppercase tracking-widest">Pemasukan (Minggu Ini)</span>
+                  <span className="text-4xl font-black font-mono text-primary tabular-nums tracking-tighter">Rp {totalPemasukanMingguan.toLocaleString("id-ID")}</span>
                 </div>
                 <div className="bg-destructive/10 border-2 border-destructive/20 rounded-3xl px-8 py-6 flex flex-col items-start justify-center gap-2 shadow-lg">
-                  <span className="text-lg text-destructive font-black uppercase tracking-widest">Total Pengeluaran</span>
-                  <span className="text-4xl font-black font-mono text-destructive tabular-nums tracking-tighter">Rp {totalPengeluaran.toLocaleString("id-ID")}</span>
+                  <span className="text-lg text-destructive font-black uppercase tracking-widest">Pengeluaran (Minggu Ini)</span>
+                  <span className="text-4xl font-black font-mono text-destructive tabular-nums tracking-tighter">Rp {totalPengeluaranMingguan.toLocaleString("id-ID")}</span>
                 </div>
                 <div className="bg-secondary/20 border-2 border-secondary/30 rounded-3xl px-8 py-6 flex flex-col items-start justify-center gap-2 shadow-lg">
-                  <span className="text-lg text-foreground font-black uppercase tracking-widest">Saldo Kas Bersih</span>
+                  <span className="text-lg text-foreground font-black uppercase tracking-widest">Saldo Kas Bersih Keseluruhan</span>
                   <span className="text-4xl font-black font-mono text-foreground tabular-nums tracking-tighter">Rp {saldo.toLocaleString("id-ID")}</span>
                 </div>
               </div>
@@ -1438,18 +1536,20 @@ export default function MasjidDisplay() {
       </main>
 
       {/* FOOTER SECTION: RUNNING TEXT MARQUEE */}
-      <footer className="relative z-10 mt-4 border-t-2 border-border/60 pt-4 flex items-center gap-4 shrink-0">
+      <footer className="relative z-10 mt-6 border-t-4 border-primary/20 bg-primary/5 backdrop-blur-3xl flex items-stretch h-20 shadow-2xl shrink-0 -mx-6 -mb-6">
         
         {/* Banner label */}
-        <div className="bg-transparent text-foreground font-black px-6 py-3 rounded-2xl flex items-center gap-3 shrink-0 text-xl tracking-widest uppercase border-r-2 border-border/50 rounded-r-none">
-          <Volume2 className="h-8 w-8 text-primary animate-pulse" /> PESAN HARI INI:
+        <div className="bg-gradient-to-r from-primary to-primary/80 text-primary-foreground font-black px-10 flex items-center justify-center gap-4 shrink-0 text-2xl tracking-widest uppercase shadow-xl z-20">
+          <Volume2 className="h-10 w-10 animate-pulse" /> INFO MASJID
         </div>
         
         {/* Scrolling text zone */}
-        <div className="flex-1 bg-card/20 backdrop-blur-3xl border-2 border-border/60 rounded-2xl p-2 h-16 flex items-center overflow-hidden shadow-inner">
-          <div className="animate-marquee text-foreground font-bold text-2xl tracking-widest flex items-center gap-16 whitespace-nowrap">
+        <div className="flex-1 flex items-center overflow-hidden relative">
+          <div className="absolute inset-y-0 left-0 w-12 bg-gradient-to-r from-background to-transparent z-10"></div>
+          <div className="absolute inset-y-0 right-0 w-12 bg-gradient-to-l from-background to-transparent z-10"></div>
+          <div className="animate-marquee text-foreground font-black text-3xl tracking-wide flex items-center gap-16 whitespace-nowrap drop-shadow-sm" style={{ animationDuration: `${settings?.running_text_speed || 45}s` }}>
             <span>{settings.running_text}</span>
-            <span className="text-primary font-serif font-black text-3xl">✦ {settings.nama_aplikasi} ✦</span>
+            <span className="text-primary font-serif italic text-4xl opacity-70">✦ {settings.nama_aplikasi} ✦</span>
             <span>{settings.running_text}</span>
           </div>
         </div>
