@@ -9,9 +9,6 @@ const nextConfig = {
   allowedDevOrigins: ['192.168.33.66', 'localhost', '127.0.0.1'],
   
   // Mengurangi penggunaan memori ekstrim saat proses 'next build' di VPS kecil
-  eslint: {
-    ignoreDuringBuilds: true,
-  },
   typescript: {
     ignoreBuildErrors: true,
   },
