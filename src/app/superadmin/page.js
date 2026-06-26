@@ -540,13 +540,13 @@ export default function SuperAdminPage() {
             {/* Top Stat Cards - Show on Dashboard */}
             {!loading && activeTab === "dashboard" && (
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6">
-              <div className="bg-card/40 backdrop-blur-3xl p-6 rounded-3xl border border-border/60 shadow-xl transition-all hover:-translate-y-2 hover:shadow-indigo-500/20 group flex flex-col justify-between">
+              <div className="bg-card/40 backdrop-blur-3xl p-6 rounded-3xl border border-border/60 shadow-xl transition-all hover:-translate-y-2 hover:shadow-indigo-500/20 group flex flex-col justify-between overflow-hidden">
                 <div className="flex justify-between items-start mb-4">
-                  <span className="text-muted-foreground text-sm font-medium">Total Customers</span>
-                  <div className="p-2 bg-primary/10 text-indigo-500 rounded-lg"><Users className="w-4 h-4"/></div>
+                  <span className="text-muted-foreground text-sm font-medium truncate">Total Customers</span>
+                  <div className="p-2 bg-primary/10 text-indigo-500 rounded-lg shrink-0"><Users className="w-4 h-4"/></div>
                 </div>
-                <div className="text-3xl font-black">{masjids.length}</div>
-                <div className="text-xs text-muted-foreground mt-2 flex items-center gap-1 text-indigo-500 font-medium">
+                <div className="text-2xl md:text-3xl font-black truncate">{masjids.length}</div>
+                <div className="text-xs text-muted-foreground mt-2 flex items-center gap-1 text-indigo-500 font-medium truncate">
                   {newUsersThisMonth > 0 ? (
                     <><TrendingUp className="w-3 h-3"/> +{newUsersThisMonth} bulan ini</>
                   ) : (
@@ -555,23 +555,23 @@ export default function SuperAdminPage() {
                 </div>
               </div>
 
-              <div className="bg-card/40 backdrop-blur-3xl p-6 rounded-3xl border border-border/60 shadow-xl transition-all hover:-translate-y-2 hover:shadow-indigo-500/20 group flex flex-col justify-between">
+              <div className="bg-card/40 backdrop-blur-3xl p-6 rounded-3xl border border-border/60 shadow-xl transition-all hover:-translate-y-2 hover:shadow-indigo-500/20 group flex flex-col justify-between overflow-hidden">
                 <div className="flex justify-between items-start mb-4">
-                  <span className="text-muted-foreground text-sm font-medium">Paid Subscriptions</span>
-                  <div className="p-2 bg-primary/10 text-indigo-500 rounded-lg"><CheckCircle className="w-4 h-4"/></div>
+                  <span className="text-muted-foreground text-sm font-medium truncate">Paid Subscriptions</span>
+                  <div className="p-2 bg-primary/10 text-indigo-500 rounded-lg shrink-0"><CheckCircle className="w-4 h-4"/></div>
                 </div>
-                <div className="text-3xl font-black">{totalPaid}</div>
+                <div className="text-2xl md:text-3xl font-black truncate">{totalPaid}</div>
                 <div className="text-xs text-muted-foreground mt-2 font-medium">
                   {((totalPaid / Math.max(1, masjids.length)) * 100).toFixed(0)}% conversion rate
                 </div>
               </div>
 
-              <div className="bg-card/40 backdrop-blur-3xl p-6 rounded-3xl border border-border/60 shadow-xl transition-all hover:-translate-y-2 hover:shadow-indigo-500/20 group flex flex-col justify-between">
+              <div className="bg-card/40 backdrop-blur-3xl p-6 rounded-3xl border border-border/60 shadow-xl transition-all hover:-translate-y-2 hover:shadow-indigo-500/20 group flex flex-col justify-between overflow-hidden">
                 <div className="flex justify-between items-start mb-4">
-                  <span className="text-muted-foreground text-sm font-medium">Pending Payments</span>
-                  <div className="p-2 bg-orange-500/10 text-orange-500 rounded-lg"><Clock className="w-4 h-4"/></div>
+                  <span className="text-muted-foreground text-sm font-medium truncate">Pending Payments</span>
+                  <div className="p-2 bg-orange-500/10 text-orange-500 rounded-lg shrink-0"><Clock className="w-4 h-4"/></div>
                 </div>
-                <div className="text-3xl font-black text-orange-500">{totalPending}</div>
+                <div className="text-2xl md:text-3xl font-black text-orange-500 truncate">{totalPending}</div>
                 <div className="text-xs text-muted-foreground mt-2 font-medium">
                   Requires follow-up
                 </div>
@@ -580,10 +580,10 @@ export default function SuperAdminPage() {
               <div className="bg-card/40 backdrop-blur-3xl p-6 rounded-3xl border border-border/60 shadow-xl transition-all hover:-translate-y-2 hover:shadow-emerald-500/20 group flex flex-col justify-between relative overflow-hidden">
                 <div className="absolute -right-4 -bottom-4 opacity-10"><Activity className="w-32 h-32 text-emerald-500" /></div>
                 <div className="flex justify-between items-start mb-4 relative z-10">
-                  <span className="text-muted-foreground text-sm font-medium">Est. Revenue (MRR)</span>
-                  <div className="p-2 bg-emerald-500/10 text-emerald-500 rounded-lg"><CreditCard className="w-4 h-4"/></div>
+                  <span className="text-muted-foreground text-sm font-medium truncate">Est. Revenue (MRR)</span>
+                  <div className="p-2 bg-emerald-500/10 text-emerald-500 rounded-lg shrink-0"><CreditCard className="w-4 h-4"/></div>
                 </div>
-                <div className="text-3xl font-black text-emerald-500 relative z-10">
+                <div className="text-2xl md:text-3xl font-black text-emerald-500 relative z-10 truncate">
                   Rp {totalRevenue > 1000000 ? (totalRevenue/1000000).toFixed(1) + 'M' : totalRevenue.toLocaleString('id-ID')}
                 </div>
                 <div className="text-xs text-muted-foreground mt-2 font-medium relative z-10">

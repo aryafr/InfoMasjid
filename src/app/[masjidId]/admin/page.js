@@ -1096,7 +1096,7 @@ export default function AdminPage() {
         </header>
 
         {/* MAIN CONTENT AREA */}
-        <main className="flex-1 overflow-y-auto p-8 relative z-10">
+        <main className="flex-1 overflow-y-auto p-4 md:p-8 relative z-10">
 
           
           {/* ==================== 0. TAB: PROFILE ==================== */}
@@ -1222,7 +1222,7 @@ export default function AdminPage() {
             <div className="animate-fade-in flex flex-col gap-8 max-w-6xl w-full mx-auto pb-20">
               
               {/* Highlight Cards */}
-              <div className="grid grid-cols-3 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 
                 <div className="bg-card/20 backdrop-blur-3xl border border-border/60 shadow-xl shadow-emerald-500/30 rounded-3xl p-6 shadow-sm flex flex-col justify-between h-40">
                   <h3 className="text-muted-foreground font-medium text-sm flex justify-between items-center">
@@ -1452,7 +1452,7 @@ export default function AdminPage() {
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-6">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                     <div>
                       <label className="text-sm text-foreground font-medium mb-2 block">Interval Rotasi Slide (Detik)</label>
                       <Input 
@@ -1497,7 +1497,7 @@ export default function AdminPage() {
                   {/* Checkboxes for active pages */}
                   <div>
                     <label className="text-sm text-foreground font-medium mb-3 block">Halaman yang Ditampilkan (Aktif)</label>
-                    <div className="grid grid-cols-3 gap-4 bg-muted/30 p-5 rounded-2xl border border-border">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 bg-muted/30 p-4 sm:p-5 rounded-2xl border border-border">
                       {(() => {
                         const masterList = [
                           { url: "welcome", name: "Dashboard Lengkap", active: true },
