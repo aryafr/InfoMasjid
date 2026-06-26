@@ -163,15 +163,20 @@ function CheckoutContent() {
       const masjidId = `${cleanName}-${Math.floor(1000 + Math.random() * 9000)}`;
 
       // 3. Save to Firestore with pending status
+      const isFree = finalPrice === 0;
+      let expiryDate = new Date();
+      expiryDate.setFullYear(expiryDate.getFullYear() + 1);
+
       // Save root document
       await setDoc(doc(db, "masjids", masjidId), {
         ownerUid: user.uid,
         email: formData.email,
         wa_number: formData.wa_number,
         nama_aplikasi: formData.nama_masjid,
-        subscription_status: "pending_payment",
-        payment_status: "pending",
+        subscription_status: isFree ? "active" : "pending_payment",
+        payment_status: isFree ? "PAID" : "pending",
         subscription_package: pkg,
+        subscription_expiry: isFree ? expiryDate.toISOString() : null,
         created_at: new Date().toISOString()
       });
 
@@ -234,6 +239,12 @@ function CheckoutContent() {
       });
 
       // 4. Call our Backend API to get Midtrans Snap Token
+      if (isFree) {
+        // Bypass Midtrans payment for 100% discount
+        router.push(`/thank-you?masjidId=${masjidId}`);
+        return;
+      }
+      
       const res = await fetch("/api/payment", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -286,7 +297,11 @@ function CheckoutContent() {
 
     } catch (err) {
       console.error(err);
-      toast.error(err.message);
+      if (err.message && err.message.includes("auth/email-already-in-use")) {
+        toast.error("Email ini sudah terdaftar. Silakan gunakan email lain atau login terlebih dahulu.");
+      } else {
+        toast.error(err.message || "Terjadi kesalahan yang tidak terduga.");
+      }
     } finally {
       setLoading(false);
     }
