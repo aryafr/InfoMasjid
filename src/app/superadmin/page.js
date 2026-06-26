@@ -142,16 +142,23 @@ export default function SuperAdminPage() {
     );
   };
 
-  const handleManualActivate = async (id) => {
+  const handleManualActivate = async (m) => {
     openConfirmModal(
       "Aktifkan Manual",
-      "Aktifkan akun ini secara manual? (Melewati proses pembayaran sistem)",
+      "Aktifkan akun ini secara manual dan catat pendapatannya? (Melewati proses pembayaran sistem)",
       async () => {
         try {
-          await updateDoc(doc(db, "masjids", id), {
+          const pkg = m.subscription_package || 'berkah';
+          let amount = globalPricing[pkg]?.original_price || 250000;
+          if (globalPricing.is_discount_active && globalPricing[pkg]?.discounted_price) {
+             amount = globalPricing[pkg].discounted_price;
+          }
+
+          await updateDoc(doc(db, "masjids", m.id), {
             payment_status: "paid",
             active_until: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000),
-            payment_method: "MANUAL_ACTIVATION"
+            payment_method: "MANUAL_ACTIVATION",
+            payment_amount: amount
           });
           toast.success("Akun masjid berhasil diaktifkan secara manual");
           fetchMasjids();
@@ -756,7 +763,7 @@ export default function SuperAdminPage() {
                             {m.payment_status !== "paid" && (
                               <Button 
                                 variant="ghost" size="icon"
-                                onClick={() => handleManualActivate(m.id)}
+                                onClick={() => handleManualActivate(m)}
                                 className="w-8 h-8 rounded-full bg-accent hover:bg-emerald-500 text-foreground hover:text-white"
                                 title="Lunaskan Manual"
                               >
