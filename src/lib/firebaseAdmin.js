@@ -6,24 +6,30 @@ if (!getApps().length) {
   try {
     let privateKey = process.env.FIREBASE_PRIVATE_KEY;
     if (privateKey) {
-      // Remove leading/trailing quotes if the deployment platform injected them
-      if (privateKey.startsWith('"') && privateKey.endsWith('"')) {
-        privateKey = privateKey.slice(1, -1);
-      } else if (privateKey.startsWith("'") && privateKey.endsWith("'")) {
-        privateKey = privateKey.slice(1, -1);
-      }
+      // 1. Remove wrapping quotes if they exist
+      privateKey = privateKey.replace(/^["']+|["']+$/g, '');
       
-      // If the private key doesn't have the standard header, assume it's base64 encoded
-      if (!privateKey.includes('-----BEGIN PRIVATE KEY-----')) {
+      // 2. If the private key doesn't have the standard header, assume it's base64 encoded
+      if (!privateKey.includes('BEGIN PRIVATE KEY')) {
          try {
              privateKey = Buffer.from(privateKey, 'base64').toString('utf-8');
+             // Remove quotes again in case the encoded string had them
+             privateKey = privateKey.replace(/^["']+|["']+$/g, '');
          } catch (e) {
              console.warn("Attempted to parse FIREBASE_PRIVATE_KEY as base64 but failed.");
          }
       }
 
-      // Replace literal \n with actual newline characters
-      privateKey = privateKey.replace(/\\n/g, '\n').trim();
+      // 3. Replace literal \n with actual newline characters
+      privateKey = privateKey.replace(/\\n/g, '\n');
+
+      // 4. Fix mangled keys without newlines (sometimes platforms replace \n with spaces)
+      if (!privateKey.includes('\n')) {
+          privateKey = privateKey.replace(/-----BEGIN PRIVATE KEY-----/g, '-----BEGIN PRIVATE KEY-----\n');
+          privateKey = privateKey.replace(/-----END PRIVATE KEY-----/g, '\n-----END PRIVATE KEY-----\n');
+      }
+
+      privateKey = privateKey.trim();
 
       // Attempt to initialize using environment variables
       initializeApp({
