@@ -13,8 +13,17 @@ if (!getApps().length) {
         privateKey = privateKey.slice(1, -1);
       }
       
+      // If the private key doesn't have the standard header, assume it's base64 encoded
+      if (!privateKey.includes('-----BEGIN PRIVATE KEY-----')) {
+         try {
+             privateKey = Buffer.from(privateKey, 'base64').toString('utf-8');
+         } catch (e) {
+             console.warn("Attempted to parse FIREBASE_PRIVATE_KEY as base64 but failed.");
+         }
+      }
+
       // Replace literal \n with actual newline characters
-      privateKey = privateKey.replace(/\\n/g, '\n');
+      privateKey = privateKey.replace(/\\n/g, '\n').trim();
 
       // Attempt to initialize using environment variables
       initializeApp({
