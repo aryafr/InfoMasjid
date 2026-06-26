@@ -311,15 +311,20 @@ export default function AdminPage() {
 
     const fetchSystemUpdate = async () => {
       try {
+        // Fetch up to 10 latest updates and filter the published one on client
+        // This avoids needing a composite index in Firestore for is_published + created_at
         const q = query(
           collection(db, "system_updates"),
-          where("is_published", "==", true),
           orderBy("created_at", "desc"),
-          limit(1)
+          limit(10)
         );
         const snapshot = await getDocs(q);
-        if (!snapshot.empty) {
-          const latestUpdate = { id: snapshot.docs[0].id, ...snapshot.docs[0].data() };
+        
+        // Find the first published update
+        const publishedDoc = snapshot.docs.find(doc => doc.data().is_published === true);
+        
+        if (publishedDoc) {
+          const latestUpdate = { id: publishedDoc.id, ...publishedDoc.data() };
           const lastSeenId = localStorage.getItem("last_seen_update");
           if (lastSeenId !== latestUpdate.id) {
             setSystemUpdate(latestUpdate);
