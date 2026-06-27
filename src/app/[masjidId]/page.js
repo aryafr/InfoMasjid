@@ -1156,15 +1156,18 @@ export default function MasjidDisplay() {
 
           {/* Slide 3: Keuangan (Ledger Table) */}
           {currentSlide.url === "keuangan" && (
-            <div className="flex flex-col h-full bg-background/50">
-              <div className="bg-primary px-10 py-8 flex items-center justify-between shadow-2xl relative overflow-hidden shrink-0">
-                <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full -translate-y-1/2 translate-x-1/3 blur-3xl"></div>
+            <div className="animate-fade-in flex flex-col gap-8 w-full h-full justify-between max-w-7xl mx-auto">
+              <div className="text-center mb-2">
                 <h2 className="text-5xl font-black text-foreground tracking-widest uppercase drop-shadow-md">
                   {settings?.keuangan_tv_filter?.type === 'monthly' ? "Mutasi Keuangan Bulan Ini" : 
                    settings?.keuangan_tv_filter?.type === 'custom' ? "Mutasi Keuangan (Periode Pilihan)" : 
                    "Mutasi Keuangan Mingguan"}
                 </h2>
-                <Wallet className="w-16 h-16 text-primary-foreground drop-shadow-xl" />
+                <p className="text-2xl text-foreground/70 font-bold mt-2 tracking-wide">
+                  {settings?.keuangan_tv_filter?.type === 'monthly' ? "Laporan mutasi kas masuk dan kas keluar bulan ini" : 
+                   settings?.keuangan_tv_filter?.type === 'custom' ? "Laporan mutasi kas masuk dan kas keluar untuk periode yang dipilih" : 
+                   "Laporan mutasi kas masuk dan kas keluar dalam 7 hari terakhir"}
+                </p>
               </div>
 
               <div className="bg-card/20 backdrop-blur-3xl border-2 border-border/60 rounded-[2rem] overflow-hidden flex-1 flex flex-col shadow-xl shadow-emerald-500/30">
