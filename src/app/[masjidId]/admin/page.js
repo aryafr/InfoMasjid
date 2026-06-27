@@ -150,8 +150,11 @@ export default function AdminPage() {
   const [actionStatus, setActionStatus] = useState({ success: null, message: "" });
   const [isSaving, setIsSaving] = useState(false);
   const [syncLoading, setSyncLoading] = useState(false);
-  const [tvUrl, setTvUrl] = useState("");
+  const [isLoading, setIsLoading] = useState(true);
   const [systemUpdate, setSystemUpdate] = useState(null);
+  const [latestUpdateData, setLatestUpdateData] = useState(null);
+  const [hasUnreadUpdate, setHasUnreadUpdate] = useState(false);
+  const [tvUrl, setTvUrl] = useState("");
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -330,9 +333,13 @@ export default function AdminPage() {
         
         if (publishedDoc) {
           const latestUpdate = { id: publishedDoc.id, ...publishedDoc.data() };
+          setLatestUpdateData(latestUpdate);
           const lastSeenId = localStorage.getItem("last_seen_update");
           if (lastSeenId !== latestUpdate.id) {
             setSystemUpdate(latestUpdate);
+            setHasUnreadUpdate(true);
+          } else {
+            setHasUnreadUpdate(false);
           }
         }
       } catch (error) {
@@ -1241,11 +1248,19 @@ export default function AdminPage() {
           <div className="flex items-center gap-3">
             <ThemeToggle />
             <button 
-              onClick={() => showAlert("Informasi Sistem", `Update pengembangan fitur terbaru (Version 1.0) telah diterapkan. Masa tenggang langganan aktif: ${getRemainingDays()} Hari.`)}
+              onClick={() => {
+                if (latestUpdateData) {
+                  setSystemUpdate(latestUpdateData);
+                } else {
+                  showAlert("Informasi Sistem", `Tidak ada pembaruan sistem terbaru. Masa tenggang langganan aktif: ${getRemainingDays()} Hari.`);
+                }
+              }}
               className="p-2 border border-border rounded-full bg-card text-muted-foreground hover:bg-accent hover:text-foreground shadow-sm transition-colors cursor-pointer relative"
               title="Notifikasi"
             >
-              <div className="absolute top-1.5 right-1.5 h-2 w-2 bg-destructive rounded-full border border-card"></div>
+              {hasUnreadUpdate && (
+                <div className="absolute top-1.5 right-1.5 h-2 w-2 bg-destructive rounded-full border border-card animate-pulse"></div>
+              )}
               <Bell className="h-5 w-5" />
             </button>
             <Button variant="outline" size="icon" className="ml-2 rounded-full" onClick={() => setActiveTab("profile")}>
@@ -3353,11 +3368,11 @@ export default function AdminPage() {
       {/* SYSTEM UPDATE NOTIFICATION MODAL */}
       {systemUpdate && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6 backdrop-blur-md bg-background/80">
-          <div className="bg-card w-full max-w-lg rounded-3xl shadow-2xl border border-primary/20 overflow-hidden transform transition-all relative">
-            <div className="bg-primary/10 p-6 flex items-center justify-center">
+          <div className="bg-card w-full max-w-lg rounded-3xl shadow-2xl border border-primary/20 overflow-hidden flex flex-col max-h-[90vh]">
+            <div className="bg-primary/10 p-6 flex items-center justify-center shrink-0">
               <Megaphone className="w-16 h-16 text-primary" />
             </div>
-            <div className="p-6 md:p-8">
+            <div className="p-6 md:p-8 overflow-y-auto custom-scrollbar flex-1">
               <div className="inline-block px-3 py-1 bg-primary/10 text-primary font-mono text-sm font-bold rounded-full mb-4">
                 {systemUpdate.version}
               </div>
@@ -3365,17 +3380,18 @@ export default function AdminPage() {
               <div className="text-muted-foreground whitespace-pre-wrap leading-relaxed text-sm">
                 {systemUpdate.content}
               </div>
-              <div className="mt-8">
-                <Button 
-                  className="w-full text-lg py-6"
-                  onClick={() => {
-                    localStorage.setItem("last_seen_update", systemUpdate.id);
-                    setSystemUpdate(null);
-                  }}
-                >
-                  Mengerti & Lanjutkan
-                </Button>
-              </div>
+            </div>
+            <div className="p-6 pt-0 shrink-0">
+              <Button 
+                className="w-full text-lg py-6"
+                onClick={() => {
+                  localStorage.setItem("last_seen_update", systemUpdate.id);
+                  setHasUnreadUpdate(false);
+                  setSystemUpdate(null);
+                }}
+              >
+                Mengerti & Tutup
+              </Button>
             </div>
           </div>
         </div>
