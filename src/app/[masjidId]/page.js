@@ -156,6 +156,7 @@ export default function MasjidDisplay() {
   const [idulFitri, setIdulFitri] = useState(null);
   const [idulAdha, setIdulAdha] = useState(null);
   const [masjidRoot, setMasjidRoot] = useState(undefined);
+  const [serverTimeOffset, setServerTimeOffset] = useState(0);
 
   // UI States
   const [currentSlideIndex, setCurrentSlideIndex] = useState(0);
@@ -276,18 +277,46 @@ export default function MasjidDisplay() {
     setTimeOffset(targetSeconds - currentRealSeconds);
   };
 
+  // Sync time with WorldTimeAPI to prevent TV Clock drift
+  useEffect(() => {
+    if (!settings || !settings.timezone) return;
+    
+    const fetchRealTime = async () => {
+      try {
+        const res = await fetch(`https://worldtimeapi.org/api/timezone/${settings.timezone}`);
+        if (!res.ok) return;
+        const data = await res.json();
+        // data.datetime contains the ISO string of the true time in that timezone
+        const serverTime = new Date(data.datetime).getTime();
+        const localTime = new Date().getTime();
+        setServerTimeOffset(serverTime - localTime);
+      } catch (error) {
+        console.error("Failed to sync time with WorldTimeAPI", error);
+      }
+    };
+    
+    fetchRealTime();
+    // Resync every hour to combat drift
+    const syncInterval = setInterval(fetchRealTime, 3600 * 1000);
+    return () => clearInterval(syncInterval);
+  }, [settings?.timezone]);
+
   // 1. Clock & Next Prayer Calculation
   useEffect(() => {
     const updateTime = () => {
-      const realNow = new Date();
+      const localNow = new Date();
+      // Apply server time offset for the true current time
+      const realNow = new Date(localNow.getTime() + serverTimeOffset);
       const now = new Date(realNow.getTime() + timeOffset * 1000);
-      setTime(now.toLocaleTimeString("id-ID", { hour: '2-digit', minute: '2-digit', second: '2-digit' }));
       
-      const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+      const tzOptions = settings?.timezone ? { timeZone: settings.timezone } : {};
+      setTime(now.toLocaleTimeString("id-ID", { hour: '2-digit', minute: '2-digit', second: '2-digit', ...tzOptions }));
+      
+      const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', ...tzOptions };
       setDateStr(now.toLocaleDateString("id-ID", options));
 
       try {
-        const hijriOptions = { day: 'numeric', month: 'long', year: 'numeric' };
+        const hijriOptions = { day: 'numeric', month: 'long', year: 'numeric', ...tzOptions };
         setHijriDateStr(new Intl.DateTimeFormat('id-TN-u-ca-islamic', hijriOptions).format(now));
       } catch (e) {
         setHijriDateStr("");
