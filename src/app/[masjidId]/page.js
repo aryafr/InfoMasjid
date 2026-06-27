@@ -514,6 +514,37 @@ export default function MasjidDisplay() {
     }
   }, [settings, masjidRoot, masjidId]);
 
+  // Prepare TV Financial Filter
+  const keuanganFilteredTV = useMemo(() => {
+    return (keuangan || []).filter(item => {
+      if (!item.tanggal) return false;
+      const itemDate = new Date(item.tanggal);
+      const filterType = settings?.keuangan_tv_filter?.type || 'weekly';
+
+      if (filterType === 'weekly') {
+         const sevenDaysAgo = new Date();
+         sevenDaysAgo.setHours(0, 0, 0, 0);
+         sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+         return itemDate >= sevenDaysAgo && itemDate <= new Date();
+      }
+      if (filterType === 'monthly') {
+         const now = new Date();
+         return itemDate.getMonth() === now.getMonth() && itemDate.getFullYear() === now.getFullYear();
+      }
+      if (filterType === 'custom') {
+         const start = settings?.keuangan_tv_filter?.customStart;
+         const end = settings?.keuangan_tv_filter?.customEnd;
+         if (!start || !end) return true;
+         const startDate = new Date(start);
+         startDate.setHours(0, 0, 0, 0);
+         const endDate = new Date(end);
+         endDate.setHours(23, 59, 59, 999);
+         return itemDate >= startDate && itemDate <= endDate;
+      }
+      return true;
+    }).sort((a, b) => new Date(b.tanggal) - new Date(a.tanggal));
+  }, [keuangan, settings?.keuangan_tv_filter]);
+
   // 4. Unified Slide & Pagination Rotation Logic
   useEffect(() => {
     if (!settings || !settings.rotation_enabled || activeSlides.length === 0) return;
@@ -539,11 +570,7 @@ export default function MasjidDisplay() {
 
           // Check Keuangan pagination
           if (currentSlideObj?.url === "keuangan") {
-             const sevenDaysAgo = new Date();
-             sevenDaysAgo.setHours(0, 0, 0, 0);
-             sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-             const weeklyData = (keuangan || []).filter(item => item.tanggal && new Date(item.tanggal) >= sevenDaysAgo);
-             const totalPages = Math.ceil(weeklyData.length / 4);
+             const totalPages = Math.ceil(keuanganFilteredTV.length / 4);
              
              if (totalPages > 1) {
                if (keuanganPage < totalPages - 1) {
@@ -712,19 +739,9 @@ export default function MasjidDisplay() {
   const totalPengeluaran = (keuangan || []).reduce((sum, item) => sum + Number(item.pengeluaran || 0), 0);
   const saldo = totalPemasukan - totalPengeluaran;
 
-  // Calculate Weekly Financials (Last 7 Days)
-  const sevenDaysAgo = new Date();
-  sevenDaysAgo.setHours(0, 0, 0, 0);
-  sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-  
-  const keuanganMingguan = (keuangan || []).filter(item => {
-    if (!item.tanggal) return false;
-    const itemDate = new Date(item.tanggal);
-    return itemDate >= sevenDaysAgo;
-  });
-
-  const totalPemasukanMingguan = keuanganMingguan.reduce((sum, item) => sum + Number(item.pemasukan || 0), 0);
-  const totalPengeluaranMingguan = keuanganMingguan.reduce((sum, item) => sum + Number(item.pengeluaran || 0), 0);
+  // TV Financial Sum based on filter
+  const totalPemasukanTV = keuanganFilteredTV.reduce((sum, item) => sum + Number(item.pemasukan || 0), 0);
+  const totalPengeluaranTV = keuanganFilteredTV.reduce((sum, item) => sum + Number(item.pengeluaran || 0), 0);
 
   // Calculate breakdown for summary
   const breakdownPemasukan = (keuangan || []).filter(i => i.pemasukan > 0).reduce((acc, curr) => {
@@ -1139,10 +1156,15 @@ export default function MasjidDisplay() {
 
           {/* Slide 3: Keuangan (Ledger Table) */}
           {currentSlide.url === "keuangan" && (
-            <div className="animate-fade-in flex flex-col gap-8 w-full h-full justify-between max-w-7xl mx-auto">
-              <div className="text-center mb-2">
-                <h2 className="text-5xl font-black text-foreground tracking-widest uppercase drop-shadow-md">Mutasi Keuangan Mingguan</h2>
-                <p className="text-2xl text-foreground/70 font-bold mt-2 tracking-wide">Laporan mutasi kas masuk dan kas keluar dalam 7 hari terakhir</p>
+            <div className="flex flex-col h-full bg-background/50">
+              <div className="bg-primary px-10 py-8 flex items-center justify-between shadow-2xl relative overflow-hidden shrink-0">
+                <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full -translate-y-1/2 translate-x-1/3 blur-3xl"></div>
+                <h2 className="text-5xl font-black text-foreground tracking-widest uppercase drop-shadow-md">
+                  {settings?.keuangan_tv_filter?.type === 'monthly' ? "Mutasi Keuangan Bulan Ini" : 
+                   settings?.keuangan_tv_filter?.type === 'custom' ? "Mutasi Keuangan (Periode Pilihan)" : 
+                   "Mutasi Keuangan Mingguan"}
+                </h2>
+                <Wallet className="w-16 h-16 text-primary-foreground drop-shadow-xl" />
               </div>
 
               <div className="bg-card/20 backdrop-blur-3xl border-2 border-border/60 rounded-[2rem] overflow-hidden flex-1 flex flex-col shadow-xl shadow-emerald-500/30">
@@ -1155,14 +1177,15 @@ export default function MasjidDisplay() {
                       <th className="p-6 w-[20%] text-right">Pengeluaran</th>
                     </tr>
                   </thead>
-                  <tbody className="flex flex-col flex-1 text-2xl divide-y-2 divide-border/40 relative overflow-hidden">
-                    {keuanganMingguan.length === 0 ? (
-                      <div className="flex-1 flex flex-col items-center justify-center text-foreground/50 h-full w-full absolute inset-0">
-                         <span className="text-3xl font-bold font-serif italic mb-2">Belum ada mutasi baru</span>
-                         <span className="text-xl">Tidak ada transaksi kas dalam 7 hari terakhir.</span>
-                      </div>
+                  <tbody className="divide-y divide-border text-2xl">
+                    {keuanganFilteredTV.length === 0 ? (
+                      <tr>
+                        <td colSpan="4" className="py-24 text-center text-muted-foreground">
+                          Tidak ada transaksi pada periode ini.
+                        </td>
+                      </tr>
                     ) : (
-                      keuanganMingguan.slice(keuanganPage * 4, (keuanganPage + 1) * 4).map((item, index) => (
+                      keuanganFilteredTV.slice(keuanganPage * 4, (keuanganPage + 1) * 4).map((item, index) => (
                         <tr key={item.id} className={`flex w-full items-center transition-colors flex-1 animate-fade-in ${index % 2 === 1 ? 'bg-muted/30' : 'bg-transparent'}`}>
                           <td className="p-6 w-[15%] text-foreground/70 font-mono font-bold tabular-nums">{item.tanggal}</td>
                           <td className="p-6 w-[45%] font-bold text-foreground flex flex-col justify-center items-start gap-2 h-full">
@@ -1187,23 +1210,27 @@ export default function MasjidDisplay() {
               </div>
 
               {/* Summary strip */}
-              <div className="grid grid-cols-3 gap-6 relative">
+              <div className="grid grid-cols-3 gap-6 relative mt-6">
                 {/* Pagination Dots indicator */}
-                {keuanganMingguan.length > 4 && (
+                {keuanganFilteredTV.length > 4 && (
                   <div className="absolute -top-6 left-1/2 -translate-x-1/2 flex items-center gap-2">
-                     {Array.from({ length: Math.ceil(keuanganMingguan.length / 4) }).map((_, i) => (
+                     {Array.from({ length: Math.ceil(keuanganFilteredTV.length / 4) }).map((_, i) => (
                         <div key={i} className={`h-2 rounded-full transition-all duration-500 ${i === keuanganPage ? "w-8 bg-primary" : "w-2 bg-primary/20"}`} />
                      ))}
                   </div>
                 )}
                 
                 <div className="bg-primary/10 border-2 border-primary/20 rounded-3xl px-8 py-6 flex flex-col items-start justify-center gap-2 shadow-lg">
-                  <span className="text-lg text-primary font-black uppercase tracking-widest">Pemasukan (Minggu Ini)</span>
-                  <span className="text-4xl font-black font-mono text-primary tabular-nums tracking-tighter">Rp {totalPemasukanMingguan.toLocaleString("id-ID")}</span>
+                  <span className="text-lg text-primary font-black uppercase tracking-widest">
+                    Pemasukan ({settings?.keuangan_tv_filter?.type === 'custom' ? 'Periode Ini' : settings?.keuangan_tv_filter?.type === 'monthly' ? 'Bulan Ini' : 'Minggu Ini'})
+                  </span>
+                  <span className="text-4xl font-black font-mono text-primary tabular-nums tracking-tighter">Rp {totalPemasukanTV.toLocaleString("id-ID")}</span>
                 </div>
                 <div className="bg-destructive/10 border-2 border-destructive/20 rounded-3xl px-8 py-6 flex flex-col items-start justify-center gap-2 shadow-lg">
-                  <span className="text-lg text-destructive font-black uppercase tracking-widest">Pengeluaran (Minggu Ini)</span>
-                  <span className="text-4xl font-black font-mono text-destructive tabular-nums tracking-tighter">Rp {totalPengeluaranMingguan.toLocaleString("id-ID")}</span>
+                  <span className="text-lg text-destructive font-black uppercase tracking-widest">
+                    Pengeluaran ({settings?.keuangan_tv_filter?.type === 'custom' ? 'Periode Ini' : settings?.keuangan_tv_filter?.type === 'monthly' ? 'Bulan Ini' : 'Minggu Ini'})
+                  </span>
+                  <span className="text-4xl font-black font-mono text-destructive tabular-nums tracking-tighter">Rp {totalPengeluaranTV.toLocaleString("id-ID")}</span>
                 </div>
                 <div className="bg-secondary/20 border-2 border-secondary/30 rounded-3xl px-8 py-6 flex flex-col items-start justify-center gap-2 shadow-lg">
                   <span className="text-lg text-foreground font-black uppercase tracking-widest">Saldo Kas Bersih Keseluruhan</span>

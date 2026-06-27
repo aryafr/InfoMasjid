@@ -210,7 +210,8 @@ export default function AdminPage() {
     durasi_sholat: { subuh: 15, dzuhur: 15, ashar: 15, maghrib: 15, isya: 15 },
     tema: "theme-emerald",
     murottal: { enabled: false, url: "" },
-    posters: []
+    posters: [],
+    keuangan_tv_filter: { type: 'weekly', customStart: '', customEnd: '' }
   });
   const [jadwalForm, setJadwalForm] = useState({
     Subuh: "", Dzuhur: "", Ashar: "", Maghrib: "", Isya: ""
@@ -389,6 +390,9 @@ export default function AdminPage() {
         }
         if (!newData.running_text_speed) {
            newData.running_text_speed = 45;
+        }
+        if (!newData.keuangan_tv_filter) {
+           newData.keuangan_tv_filter = { type: 'weekly', customStart: '', customEnd: '' };
         }
         setSettingsForm(newData);
       }
@@ -752,6 +756,16 @@ export default function AdminPage() {
     showConfirm("Hapus Transaksi", "Hapus transaksi keuangan ini?", () => {
       executeSave(deleteKeuangan, id, "Transaksi keuangan berhasil dihapus!");
     });
+  };
+
+  const handleSaveTVSettings = async (e) => {
+    e.preventDefault();
+    try {
+      await updateSettings(masjidId, { ...settings, keuangan_tv_filter: settingsForm.keuangan_tv_filter });
+      toast.success("Pengaturan Layar TV berhasil disimpan!");
+    } catch (err) {
+      toast.error("Gagal menyimpan pengaturan layar TV");
+    }
   };
 
   const filteredKeuangan = (keuangan || []).filter(item => {
@@ -2381,6 +2395,71 @@ export default function AdminPage() {
                         {isSaving ? <span className="animate-spin text-xl">⏳</span> : <>Simpan {transactionType === "masuk" ? "Pemasukan" : "Pengeluaran"}</>}
                       </button>
                     </div>
+                  </form>
+                </div>
+
+                {/* TV Display Settings */}
+                <div className="bg-card/20 backdrop-blur-3xl border border-border/60 shadow-xl shadow-emerald-500/30 rounded-3xl p-8 shadow-sm mb-4">
+                  <div className="flex items-center gap-3 mb-6 pb-4 border-b border-border/50">
+                    <div className="p-2.5 bg-primary/10 rounded-xl text-primary">
+                      <LayoutDashboard className="w-6 h-6" />
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-bold text-foreground">Pengaturan Tampilan Layar TV</h3>
+                      <p className="text-sm text-muted-foreground mt-1">Pilih rentang waktu laporan keuangan yang akan ditampilkan otomatis pada Smart TV masjid.</p>
+                    </div>
+                  </div>
+                  
+                  <form onSubmit={handleSaveTVSettings} className="flex flex-col md:flex-row md:items-end gap-6">
+                    <div className="flex-1 space-y-2">
+                      <label className="text-sm font-bold text-foreground/80">Rentang Waktu Laporan (di TV)</label>
+                      <select 
+                        value={settingsForm.keuangan_tv_filter?.type || 'weekly'}
+                        onChange={(e) => setSettingsForm({
+                          ...settingsForm,
+                          keuangan_tv_filter: { ...(settingsForm.keuangan_tv_filter || {}), type: e.target.value }
+                        })}
+                        className="w-full bg-background border border-input rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary"
+                      >
+                        <option value="weekly">Otomatis (7 Hari Terakhir)</option>
+                        <option value="monthly">Otomatis (Bulan Ini)</option>
+                        <option value="custom">Rentang Tanggal Manual...</option>
+                      </select>
+                    </div>
+
+                    {settingsForm.keuangan_tv_filter?.type === 'custom' && (
+                      <div className="flex-2 flex items-center gap-3">
+                        <div className="w-full space-y-2">
+                          <label className="text-sm font-bold text-foreground/80">Dari Tanggal</label>
+                          <input 
+                            type="date"
+                            value={settingsForm.keuangan_tv_filter?.customStart || ''}
+                            onChange={(e) => setSettingsForm({
+                              ...settingsForm,
+                              keuangan_tv_filter: { ...(settingsForm.keuangan_tv_filter || {}), customStart: e.target.value }
+                            })}
+                            className="w-full bg-background border border-input rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary"
+                          />
+                        </div>
+                        <span className="mt-8 text-muted-foreground font-bold">-</span>
+                        <div className="w-full space-y-2">
+                          <label className="text-sm font-bold text-foreground/80">Sampai Tanggal</label>
+                          <input 
+                            type="date"
+                            value={settingsForm.keuangan_tv_filter?.customEnd || ''}
+                            onChange={(e) => setSettingsForm({
+                              ...settingsForm,
+                              keuangan_tv_filter: { ...(settingsForm.keuangan_tv_filter || {}), customEnd: e.target.value }
+                            })}
+                            className="w-full bg-background border border-input rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary"
+                          />
+                        </div>
+                      </div>
+                    )}
+
+                    <button type="submit" className="bg-primary text-primary-foreground font-bold px-8 py-3 rounded-xl shadow-lg hover:-translate-y-0.5 transition-all w-full md:w-auto h-[46px]">
+                      Simpan TV
+                    </button>
                   </form>
                 </div>
 
