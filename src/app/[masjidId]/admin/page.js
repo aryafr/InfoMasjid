@@ -236,6 +236,10 @@ export default function AdminPage() {
   const [transactionType, setTransactionType] = useState("masuk"); // 'masuk' or 'keluar'
   const [editingKeuangan, setEditingKeuangan] = useState(null);
 
+  // Keuangan Export & Filter State
+  const [keuanganFilterType, setKeuanganFilterType] = useState('all'); // 'all', 'weekly', 'monthly', 'custom'
+  const [keuanganCustomDate, setKeuanganCustomDate] = useState({ start: '', end: '' });
+
   // City Search State for Jadwal Sholat
   const [citySearchTerm, setCitySearchTerm] = useState("");
   const [citySuggestions, setCitySuggestions] = useState([]);
@@ -748,6 +752,142 @@ export default function AdminPage() {
     showConfirm("Hapus Transaksi", "Hapus transaksi keuangan ini?", () => {
       executeSave(deleteKeuangan, id, "Transaksi keuangan berhasil dihapus!");
     });
+  };
+
+  const filteredKeuangan = (keuangan || []).filter(item => {
+    if (keuanganFilterType === 'all') return true;
+    const itemDate = new Date(item.tanggal);
+    const now = new Date();
+    
+    if (keuanganFilterType === 'weekly') {
+       const sevenDaysAgo = new Date();
+       sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+       sevenDaysAgo.setHours(0,0,0,0);
+       return itemDate >= sevenDaysAgo && itemDate <= new Date();
+    }
+    if (keuanganFilterType === 'monthly') {
+       return itemDate.getMonth() === now.getMonth() && itemDate.getFullYear() === now.getFullYear();
+    }
+    if (keuanganFilterType === 'custom') {
+       if (!keuanganCustomDate.start || !keuanganCustomDate.end) return true;
+       return itemDate >= new Date(keuanganCustomDate.start) && itemDate <= new Date(keuanganCustomDate.end);
+    }
+    return true;
+  });
+
+  const handleExportPDF = async () => {
+    try {
+      const { jsPDF } = await import("jspdf");
+      await import("jspdf-autotable");
+      const doc = new jsPDF();
+      
+      doc.setFontSize(18);
+      doc.text("Laporan Rekapitulasi Kas Keuangan", 14, 22);
+      doc.setFontSize(11);
+      doc.setTextColor(100);
+      doc.text(`Masjid: ${masjidData?.nama_aplikasi || "InfoMasjid"}`, 14, 30);
+      
+      let periodStr = "Semua Waktu";
+      if (keuanganFilterType === 'weekly') periodStr = "7 Hari Terakhir";
+      if (keuanganFilterType === 'monthly') periodStr = "Bulan Ini";
+      if (keuanganFilterType === 'custom') periodStr = `${keuanganCustomDate.start} s/d ${keuanganCustomDate.end}`;
+      doc.text(`Periode: ${periodStr}`, 14, 36);
+
+      const tableColumn = ["Tanggal", "Keterangan", "Kategori", "Pemasukan", "Pengeluaran"];
+      const tableRows = [];
+
+      let totalIn = 0;
+      let totalOut = 0;
+
+      filteredKeuangan.forEach(item => {
+        const p = Number(item.pemasukan || 0);
+        const k = Number(item.pengeluaran || 0);
+        totalIn += p;
+        totalOut += k;
+        tableRows.push([
+          item.tanggal,
+          item.deskripsi,
+          item.kategori,
+          p > 0 ? `Rp ${p.toLocaleString('id-ID')}` : "-",
+          k > 0 ? `Rp ${k.toLocaleString('id-ID')}` : "-"
+        ]);
+      });
+
+      doc.autoTable({
+        head: [tableColumn],
+        body: tableRows,
+        startY: 45,
+        theme: 'striped',
+        headStyles: { fillColor: [5, 150, 105] }, // primary emerald
+      });
+
+      const finalY = doc.lastAutoTable.finalY || 45;
+      doc.setFontSize(12);
+      doc.setTextColor(0);
+      doc.text(`Total Pemasukan: Rp ${totalIn.toLocaleString('id-ID')}`, 14, finalY + 10);
+      doc.text(`Total Pengeluaran: Rp ${totalOut.toLocaleString('id-ID')}`, 14, finalY + 18);
+      doc.setFontSize(14);
+      doc.text(`Saldo Akhir: Rp ${(totalIn - totalOut).toLocaleString('id-ID')}`, 14, finalY + 28);
+
+      doc.save(`Laporan_Keuangan_${masjidId}.pdf`);
+      toast.success("Laporan PDF berhasil diunduh!");
+    } catch (err) {
+      console.error(err);
+      toast.error("Gagal membuat PDF");
+    }
+  };
+
+  const handleExportExcel = async () => {
+    try {
+      const XLSX = await import("xlsx");
+      
+      const worksheetData = [
+        ["Laporan Rekapitulasi Kas Keuangan"],
+        [`Masjid: ${masjidData?.nama_aplikasi || "InfoMasjid"}`],
+        []
+      ];
+
+      let periodStr = "Semua Waktu";
+      if (keuanganFilterType === 'weekly') periodStr = "7 Hari Terakhir";
+      if (keuanganFilterType === 'monthly') periodStr = "Bulan Ini";
+      if (keuanganFilterType === 'custom') periodStr = `${keuanganCustomDate.start} s/d ${keuanganCustomDate.end}`;
+      worksheetData[1].push(`Periode: ${periodStr}`);
+
+      const header = ["Tanggal", "Keterangan", "Kategori", "Pemasukan (Rp)", "Pengeluaran (Rp)"];
+      worksheetData.push(header);
+
+      let totalIn = 0;
+      let totalOut = 0;
+
+      filteredKeuangan.forEach(item => {
+        const p = Number(item.pemasukan || 0);
+        const k = Number(item.pengeluaran || 0);
+        totalIn += p;
+        totalOut += k;
+        worksheetData.push([
+          item.tanggal,
+          item.deskripsi,
+          item.kategori,
+          p,
+          k
+        ]);
+      });
+
+      worksheetData.push([]);
+      worksheetData.push(["", "", "Total Pemasukan", totalIn, ""]);
+      worksheetData.push(["", "", "Total Pengeluaran", "", totalOut]);
+      worksheetData.push(["", "", "Saldo Akhir", totalIn - totalOut, ""]);
+
+      const ws = XLSX.utils.aoa_to_sheet(worksheetData);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "Keuangan");
+      
+      XLSX.writeFile(wb, `Laporan_Keuangan_${masjidId}.xlsx`);
+      toast.success("Laporan Excel berhasil diunduh!");
+    } catch (err) {
+      console.error(err);
+      toast.error("Gagal membuat Excel");
+    }
   };
 
   const handleQrisSubmit = (e) => {
@@ -2246,14 +2386,53 @@ export default function AdminPage() {
 
                 {/* Ledger Table */}
                 <div className="bg-card/20 backdrop-blur-3xl border border-border/60 shadow-xl shadow-emerald-500/30 rounded-3xl p-8 shadow-sm">
-                  <div className="flex justify-between items-center mb-6 pb-4 border-b border-border/50">
-                    <div className="flex items-center gap-3">
-                      <div className="p-2.5 bg-secondary/80 rounded-xl text-secondary-foreground">
-                        <FileText className="w-6 h-6" />
+                    <div className="flex flex-col md:flex-row md:items-center justify-between border-b border-border/50 pb-5 mb-6 gap-4">
+                      <div className="flex items-center gap-3">
+                        <div className="p-2.5 bg-secondary/80 rounded-xl text-secondary-foreground">
+                          <FileText className="w-6 h-6" />
+                        </div>
+                        <h3 className="text-lg font-bold text-foreground">Buku Kas Rekapitulasi</h3>
                       </div>
-                      <h3 className="text-lg font-bold text-foreground">Buku Kas Rekapitulasi</h3>
+                      <div className="flex flex-wrap items-center gap-3">
+                        <div className="flex items-center gap-2">
+                          <select 
+                            value={keuanganFilterType} 
+                            onChange={(e) => setKeuanganFilterType(e.target.value)}
+                            className="bg-background border border-input rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
+                          >
+                            <option value="all">Semua Waktu</option>
+                            <option value="weekly">7 Hari Terakhir</option>
+                            <option value="monthly">Bulan Ini</option>
+                            <option value="custom">Pilih Tanggal...</option>
+                          </select>
+                          {keuanganFilterType === 'custom' && (
+                            <div className="flex items-center gap-2">
+                              <input 
+                                type="date" 
+                                value={keuanganCustomDate.start}
+                                onChange={(e) => setKeuanganCustomDate({...keuanganCustomDate, start: e.target.value})}
+                                className="bg-background border border-input rounded-xl px-2 py-2 text-sm"
+                              />
+                              <span className="text-muted-foreground">-</span>
+                              <input 
+                                type="date" 
+                                value={keuanganCustomDate.end}
+                                onChange={(e) => setKeuanganCustomDate({...keuanganCustomDate, end: e.target.value})}
+                                className="bg-background border border-input rounded-xl px-2 py-2 text-sm"
+                              />
+                            </div>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <button onClick={handleExportPDF} className="flex items-center gap-1.5 px-3 py-2 bg-destructive/10 text-destructive hover:bg-destructive/20 rounded-xl text-sm font-semibold transition-colors">
+                            <Download className="w-4 h-4" /> PDF
+                          </button>
+                          <button onClick={handleExportExcel} className="flex items-center gap-1.5 px-3 py-2 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/20 rounded-xl text-sm font-semibold transition-colors">
+                            <Download className="w-4 h-4" /> Excel
+                          </button>
+                        </div>
+                      </div>
                     </div>
-                  </div>
 
                   <div className="overflow-x-auto custom-scrollbar pb-4">
                     <table className="w-full text-left border-collapse min-w-[800px]">
@@ -2268,7 +2447,7 @@ export default function AdminPage() {
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-border/40">
-                        {(keuangan || []).map((item, index) => {
+                        {filteredKeuangan.map((item, index) => {
                           const isIncome = item.pemasukan > 0;
                           return (
                             <tr key={item.id} className={`group hover:bg-muted/30 transition-colors ${index % 2 === 1 ? 'bg-muted/10' : 'bg-transparent'}`}>
@@ -2312,7 +2491,7 @@ export default function AdminPage() {
                             </tr>
                           );
                         })}
-                        {(!keuangan || keuangan.length === 0) && (
+                        {filteredKeuangan.length === 0 && (
                           <tr>
                             <td colSpan="6" className="py-20 text-center">
                                <div className="flex flex-col items-center justify-center text-muted-foreground opacity-60">
