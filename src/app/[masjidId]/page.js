@@ -232,9 +232,7 @@ export default function MasjidDisplay() {
     const currentRealSeconds = realNow.getHours() * 3600 + realNow.getMinutes() * 60 + realNow.getSeconds();
     
     const prayers = [
-      { name: "Imsak", timeStr: jadwal.Imsak },
       { name: "Subuh", timeStr: jadwal.Subuh },
-      { name: "Terbit", timeStr: jadwal.Terbit },
       { name: "Dzuhur", timeStr: jadwal.Dzuhur },
       { name: "Ashar", timeStr: jadwal.Ashar },
       { name: "Maghrib", timeStr: jadwal.Maghrib },
@@ -322,12 +320,9 @@ export default function MasjidDisplay() {
         setHijriDateStr("");
       }
 
-      // Calculate next prayer if jadwal is available
       if (jadwal) {
         const prayers = [
-          { name: "Imsak", timeStr: jadwal.Imsak },
           { name: "Subuh", timeStr: jadwal.Subuh },
-          { name: "Terbit", timeStr: jadwal.Terbit },
           { name: "Dzuhur", timeStr: jadwal.Dzuhur },
           { name: "Ashar", timeStr: jadwal.Ashar },
           { name: "Maghrib", timeStr: jadwal.Maghrib },
@@ -957,9 +952,6 @@ export default function MasjidDisplay() {
             <h1 className="text-5xl font-black tracking-tight text-foreground drop-shadow-sm">
               {settings.nama_aplikasi}
             </h1>
-            <p className="text-foreground/70 font-bold flex items-center gap-2 text-2xl mt-2 uppercase tracking-widest">
-              <MapPin className="h-7 w-7" /> {settings.auto_update.city}, Indonesia
-            </p>
           </div>
         </div>
 
@@ -1146,28 +1138,28 @@ export default function MasjidDisplay() {
                 <div className="h-2 w-32 bg-primary mx-auto mt-6 rounded-full shadow-lg shadow-primary/30"></div>
               </div>
               
-              <div className="grid grid-cols-5 gap-6">
-                {["Subuh", "Dzuhur", "Ashar", "Maghrib", "Isya"].map((name) => {
+              <div className="grid grid-cols-7 gap-3">
+                {["Imsak", "Subuh", "Terbit", "Dzuhur", "Ashar", "Maghrib", "Isya"].map((name) => {
                   const isActive = nextPrayer.name === name;
                   return (
                     <div 
                       key={name}
-                      className={`flex flex-col items-center justify-between p-6 rounded-[2rem] border-2 transition-all flex-1 ${
+                      className={`flex flex-col items-center justify-between p-4 rounded-[1.5rem] border-2 transition-all flex-1 ${
                         isActive 
                           ? "bg-gradient-to-b from-primary to-primary/90 border-primary text-primary-foreground shadow-2xl shadow-primary/40 scale-105 z-10" 
                           : "bg-card/20 backdrop-blur-3xl border-border/60 text-foreground shadow-xl shadow-emerald-500/30"
                       }`}
                     >
-                      <span className={`text-3xl font-black uppercase tracking-widest ${isActive ? "text-primary-foreground drop-shadow-md" : "text-foreground/70"}`}>
+                      <span className={`text-2xl font-black uppercase tracking-wider ${isActive ? "text-primary-foreground drop-shadow-md" : "text-foreground/70"}`}>
                         {name}
                       </span>
                       
                       <div className={`flex justify-center items-center ${isActive ? "opacity-30" : "opacity-10"}`}>
-                        <MoonStar className="h-16 w-16" strokeWidth={1.5} />
+                        <MoonStar className="h-12 w-12" strokeWidth={1.5} />
                       </div>
                       
-                      <div className="flex flex-col items-center gap-4 w-full">
-                        <span className="text-5xl font-mono font-black tracking-tighter tabular-nums drop-shadow-md">
+                      <div className="flex flex-col items-center gap-3 w-full">
+                        <span className="text-4xl font-mono font-black tracking-tighter tabular-nums drop-shadow-md">
                           {jadwal[name]}
                         </span>
                         {isActive && (
@@ -1211,8 +1203,8 @@ export default function MasjidDisplay() {
                   </thead>
                   <tbody className="divide-y divide-border text-2xl">
                     {keuanganFilteredTV.length === 0 ? (
-                      <tr>
-                        <td colSpan="4" className="py-24 text-center text-muted-foreground">
+                      <tr className="flex w-full flex-1 items-center justify-center min-h-[300px]">
+                        <td className="text-center text-muted-foreground/70 text-3xl font-bold w-full italic">
                           Tidak ada transaksi pada periode ini.
                         </td>
                       </tr>
