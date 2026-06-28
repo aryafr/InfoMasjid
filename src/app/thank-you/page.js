@@ -29,23 +29,42 @@ function ThankYouContent() {
             <Tv className="text-primary w-5 h-5" />
             Langkah Pemasangan TV Masjid
           </h2>
-          <ol className="space-y-4 text-muted-foreground list-decimal list-inside">
-            <li className="pl-2">
-              <span className="font-semibold text-foreground">Siapkan Smart TV atau Android TV Box.</span> Pastikan perangkat terhubung ke koneksi internet (Wi-Fi).
-            </li>
-            <li className="pl-2">
-              <span className="font-semibold text-foreground">Buka Browser Web</span> (misalnya Google Chrome atau browser bawaan TV) di perangkat TV Anda.
-            </li>
-            <li className="pl-2">
-              <span className="font-semibold text-foreground">Ketik alamat URL ini di layar TV Anda:</span>
-              <div className="bg-background border border-border px-4 py-3 rounded-lg mt-2 font-mono text-primary text-center break-all select-all">
+          <div className="space-y-6">
+            <div>
+              <h3 className="font-bold text-foreground mb-2 flex items-center gap-2">
+                <span className="bg-primary/20 text-primary w-6 h-6 rounded-full flex items-center justify-center text-sm">A</span>
+                Cara Khusus Android TV / STB (Paling Disarankan)
+              </h3>
+              <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-4 text-sm text-blue-800 dark:text-blue-300">
+                <p className="font-bold mb-2">Gunakan aplikasi "Fully Kiosk Browser" 🔥</p>
+                <ol className="list-decimal list-outside pl-4 space-y-2">
+                  <li>Instal aplikasi bernama <strong>Fully Kiosk Browser</strong> dari Google Play Store TV (atau sideload APK). Aplikasi ini dirancang khusus untuk layar informasi.</li>
+                  <li>Masukkan URL InfoMasjid di bawah ini ke dalam pengaturannya sebagai <em>Start URL</em>.</li>
+                  <li>Aktifkan pengaturan <strong>Auto-Start on Boot</strong> di dalam aplikasi tersebut.</li>
+                  <li className="font-semibold text-primary">Hasilnya: Begitu marbot menyalakan TV, layar akan langsung otomatis membuka InfoMasjid Full Screen tanpa perlu disentuh sama sekali!</li>
+                </ol>
+              </div>
+            </div>
+
+            <div>
+              <h3 className="font-bold text-foreground mb-2 flex items-center gap-2">
+                <span className="bg-primary/20 text-primary w-6 h-6 rounded-full flex items-center justify-center text-sm">B</span>
+                Cara Manual (Smart TV Biasa / Laptop)
+              </h3>
+              <ol className="space-y-3 text-muted-foreground list-decimal list-inside text-sm">
+                <li className="pl-2">Buka Google Chrome atau browser bawaan TV Anda.</li>
+                <li className="pl-2">Ketik alamat URL di bawah ini pada bar pencarian browser.</li>
+                <li className="pl-2">Gunakan remote atau tekan <strong>F11</strong> di keyboard untuk masuk ke mode Layar Penuh (Fullscreen) agar alamat web hilang.</li>
+              </ol>
+            </div>
+            
+            <div className="pt-2 border-t border-border/50">
+              <p className="font-semibold text-foreground mb-3 text-sm text-center">URL TV InfoMasjid Anda:</p>
+              <div className="bg-background border-2 border-primary/30 px-4 py-4 rounded-xl font-mono text-primary text-center break-all select-all font-bold text-xl shadow-inner">
                 https://infomasjid.cloud/{masjidId || "id-masjid-anda"}
               </div>
-            </li>
-            <li className="pl-2">
-              <span className="font-semibold text-foreground">Tekan F11 atau tombol Fullscreen</span> pada remote untuk membuat tampilan menjadi layar penuh (menghilangkan bar alamat browser).
-            </li>
-          </ol>
+            </div>
+          </div>
         </div>
 
         <button 

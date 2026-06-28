@@ -2971,11 +2971,25 @@ export default function AdminPage() {
                       
                       <div className="bg-muted/30 p-6 rounded-2xl border border-border">
                         <h4 className="font-bold text-foreground mb-3 flex items-center gap-2"><PlayCircle className="w-5 h-5 text-primary"/> Langkah Menyalakan TV</h4>
-                        <ul className="text-sm text-foreground/80 space-y-2 pl-5 list-decimal">
-                          <li>Buka aplikasi <strong>Browser</strong> di TV (Google Chrome, Firefox, atau browser bawaan).</li>
-                          <li>Ketikkan alamat link khusus TV Anda di kolom pencarian.</li>
-                          <li>Halaman TV akan terbuka dan langsung memulai rotasi informasi.</li>
-                        </ul>
+                        
+                        <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-3 text-sm text-blue-800 dark:text-blue-300 mb-3">
+                          <p className="font-bold mb-1">A. Rekomendasi Utama (Android TV / STB)</p>
+                          <ul className="pl-4 list-decimal space-y-1 mt-1">
+                            <li>Instal aplikasi <strong>Fully Kiosk Browser</strong> dari Play Store TV.</li>
+                            <li>Masukkan Link TV Anda (di atas) ke dalam pengaturan <em>Start URL</em>.</li>
+                            <li>Aktifkan fitur <strong>Auto-Start on Boot</strong>.</li>
+                            <li className="font-semibold text-primary">Begitu TV dicolokkan listrik/dinyalakan, InfoMasjid akan otomatis terbuka <em>Full Screen</em> tanpa perlu disentuh marbot!</li>
+                          </ul>
+                        </div>
+                        
+                        <div className="text-sm text-foreground/80">
+                          <p className="font-bold mb-1">B. Cara Manual (Browser Biasa)</p>
+                          <ul className="pl-5 list-decimal space-y-1">
+                            <li>Buka aplikasi Browser (Chrome/bawaan TV).</li>
+                            <li>Ketik Link TV Anda di kolom pencarian.</li>
+                            <li>Tekan <strong>F11</strong> atau cari opsi <em>Fullscreen</em> di remote agar URL hilang.</li>
+                          </ul>
+                        </div>
                       </div>
                     </div>
 
