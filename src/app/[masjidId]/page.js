@@ -228,8 +228,20 @@ export default function MasjidDisplay() {
 
   const handleSimulate = (mode) => {
     if (!jadwal) return;
-    const realNow = new Date();
-    const currentRealSeconds = realNow.getHours() * 3600 + realNow.getMinutes() * 60 + realNow.getSeconds();
+    const localNow = new Date();
+    const realNow = new Date(localNow.getTime() + serverTimeOffset);
+    const tzOptions = settings?.timezone ? { timeZone: settings.timezone } : {};
+    
+    const timeParts = new Intl.DateTimeFormat('en-GB', {
+      hour: 'numeric', minute: 'numeric', second: 'numeric', hourCycle: 'h23',
+      ...tzOptions
+    }).formatToParts(realNow);
+    
+    const hh = parseInt(timeParts.find(p => p.type === 'hour')?.value || '0');
+    const mm = parseInt(timeParts.find(p => p.type === 'minute')?.value || '0');
+    const ss = parseInt(timeParts.find(p => p.type === 'second')?.value || '0');
+    
+    const currentRealSeconds = hh * 3600 + mm * 60 + ss;
     
     const prayers = [
       { name: "Subuh", timeStr: jadwal.Subuh },
@@ -329,7 +341,16 @@ export default function MasjidDisplay() {
           { name: "Isya", timeStr: jadwal.Isya }
         ];
 
-        const currentSeconds = now.getHours() * 3600 + now.getMinutes() * 60 + now.getSeconds();
+        const timeParts = new Intl.DateTimeFormat('en-GB', {
+          hour: 'numeric', minute: 'numeric', second: 'numeric', hourCycle: 'h23',
+          ...tzOptions
+        }).formatToParts(now);
+        
+        const hh = parseInt(timeParts.find(p => p.type === 'hour')?.value || '0');
+        const mm = parseInt(timeParts.find(p => p.type === 'minute')?.value || '0');
+        const ss = parseInt(timeParts.find(p => p.type === 'second')?.value || '0');
+        
+        const currentSeconds = hh * 3600 + mm * 60 + ss;
         let found = false;
         
         for (let prayer of prayers) {
