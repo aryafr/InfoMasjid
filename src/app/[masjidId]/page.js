@@ -112,6 +112,11 @@ export default function MasjidDisplay() {
     }
   }, []);
 
+  // Realtime States
+  const [settings, setSettings] = useState(null);
+  const [jadwal, setJadwal] = useState(null);
+  const [windowScale, setWindowScale] = useState(1);
+
   // Lazy Sync Trigger for TV
   useEffect(() => {
     if (settings?.auto_update?.cityId && jadwal && !jadwal.isMock && jadwal.last_sync_date) {
@@ -142,11 +147,6 @@ export default function MasjidDisplay() {
       }
     }
   }, [settings, jadwal, masjidId]);
-
-  // Realtime States
-  const [settings, setSettings] = useState(null);
-  const [jadwal, setJadwal] = useState(null);
-  const [windowScale, setWindowScale] = useState(1);
 
   useEffect(() => {
     const handleResize = () => {
