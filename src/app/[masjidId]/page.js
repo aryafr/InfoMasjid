@@ -847,7 +847,7 @@ export default function MasjidDisplay() {
       {/* Fullscreen Toggle */}
       <button 
         onClick={toggleFullScreen}
-        className="absolute top-4 right-4 z-[200] p-3 bg-black/20 hover:bg-black/40 backdrop-blur-sm rounded-full text-white/50 hover:text-white transition-all pointer-events-auto"
+        className="absolute top-4 right-4 z-[200] p-3 bg-black/60 hover:bg-black/80 rounded-full text-white/50 hover:text-white transition-all pointer-events-auto"
         title="Layar Penuh (F11)"
       >
         <Maximize className="w-5 h-5" />
@@ -1010,7 +1010,7 @@ export default function MasjidDisplay() {
         {/* Global Countdown & Time */}
         <div className="flex items-center gap-4">
           {/* Next Prayer Countdown Widget */}
-          <div className="bg-card/20 backdrop-blur-3xl border-2 border-border/80 px-8 py-4 rounded-3xl shadow-2xl flex items-center gap-6 shadow-primary/5 mr-2 relative shrink-0 overflow-hidden">
+          <div className="bg-card/60 border-2 border-border/80 px-8 py-4 rounded-3xl shadow-2xl flex items-center gap-6 shadow-primary/5 mr-2 relative shrink-0 overflow-hidden">
             <div className="absolute left-0 inset-y-0 w-2 bg-gradient-to-b from-primary via-secondary to-primary"></div>
             <div className="flex flex-col items-end justify-center">
               <span className="text-sm font-black text-primary tracking-widest uppercase mb-1 whitespace-nowrap">
@@ -1057,7 +1057,7 @@ export default function MasjidDisplay() {
             )}
           </div>
           
-          <div className="bg-card/30 backdrop-blur-3xl border-4 border-border/80 px-10 py-5 rounded-[2.5rem] shadow-2xl flex items-center gap-6 shadow-primary/10">
+          <div className="bg-card/60 border-4 border-border/80 px-10 py-5 rounded-[2.5rem] shadow-2xl flex items-center gap-6 shadow-primary/10">
             <Clock className="h-12 w-12 text-primary animate-pulse" />
             <span className="text-7xl font-mono font-black tracking-tighter tabular-nums text-foreground drop-shadow-lg">
               {time}
@@ -1088,7 +1088,7 @@ export default function MasjidDisplay() {
               
               {/* Top Banner Row */}
               <div className="grid grid-cols-3 gap-6">
-                <div className="col-span-2 bg-card/20 backdrop-blur-3xl rounded-[2rem] p-6 border-2 border-border/60 flex flex-col justify-between shadow-xl shadow-emerald-500/30 relative overflow-hidden">
+                <div className="col-span-2 bg-card/60 rounded-[2rem] p-6 border-2 border-border/60 flex flex-col justify-between shadow-xl shadow-emerald-500/30 relative overflow-hidden">
                   
                   {/* Islamic Geometric Ornament Watermark */}
                   <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-primary/30 pointer-events-none"></div>
@@ -1112,7 +1112,7 @@ export default function MasjidDisplay() {
                   </div>
                 </div>
 
-                <div className="bg-card/20 backdrop-blur-3xl rounded-[2rem] p-8 border-2 border-border/60 flex flex-col justify-between items-center text-center shadow-xl shadow-emerald-500/30">
+                <div className="bg-card/60 rounded-[2rem] p-8 border-2 border-border/60 flex flex-col justify-between items-center text-center shadow-xl shadow-emerald-500/30">
                   <span className="text-foreground/80 text-xl font-black tracking-widest uppercase">Jumat Terdekat</span>
                   <div className="my-4">
                     <p className="text-primary text-4xl font-black">{upcomingJumat?.khatib || "Loading..."}</p>
@@ -1128,7 +1128,7 @@ export default function MasjidDisplay() {
               <div className="grid grid-cols-2 gap-6 flex-1 mt-4 min-h-0">
                 
                 {/* Mini Prayer List */}
-                <div className="bg-card/20 backdrop-blur-3xl rounded-[2rem] p-6 border-2 border-border/60 shadow-xl shadow-emerald-500/30 flex flex-col h-full overflow-hidden">
+                <div className="bg-card/60 rounded-[2rem] p-6 border-2 border-border/60 shadow-xl shadow-emerald-500/30 flex flex-col h-full overflow-hidden">
                   <h3 className="text-primary text-xl font-black flex items-center gap-3 mb-3 border-b-2 border-border/50 pb-2 uppercase tracking-wider shrink-0">
                     <Clock className="h-6 w-6" /> Waktu Sholat
                   </h3>
@@ -1152,7 +1152,7 @@ export default function MasjidDisplay() {
                 </div>
 
                 {/* Announcements Box */}
-                <div className="bg-card/20 backdrop-blur-3xl rounded-[2rem] p-6 border-2 border-border/60 shadow-xl shadow-emerald-500/30 flex flex-col h-full overflow-hidden">
+                <div className="bg-card/60 rounded-[2rem] p-6 border-2 border-border/60 shadow-xl shadow-emerald-500/30 flex flex-col h-full overflow-hidden">
                   <h3 className="text-primary text-xl font-black flex items-center gap-3 mb-3 border-b-2 border-border/50 pb-2 uppercase tracking-wider shrink-0">
                     <Volume2 className="h-6 w-6" /> Pengumuman Utama
                   </h3>
@@ -1199,7 +1199,7 @@ export default function MasjidDisplay() {
                       className={`flex flex-col items-center justify-between p-4 rounded-[1.5rem] border-2 transition-all flex-1 ${
                         isActive 
                           ? "bg-gradient-to-b from-primary to-primary/90 border-primary text-primary-foreground shadow-2xl shadow-primary/40 scale-105 z-10" 
-                          : "bg-card/20 backdrop-blur-3xl border-border/60 text-foreground shadow-xl shadow-emerald-500/30"
+                          : "bg-card/60 border-border/60 text-foreground shadow-xl shadow-emerald-500/30"
                       }`}
                     >
                       <span className={`text-2xl font-black uppercase tracking-wider ${isActive ? "text-primary-foreground drop-shadow-md" : "text-foreground/70"}`}>
@@ -1243,7 +1243,7 @@ export default function MasjidDisplay() {
                 </p>
               </div>
 
-              <div className="bg-card/20 backdrop-blur-3xl border-2 border-border/60 rounded-[2rem] overflow-hidden flex-1 flex flex-col shadow-xl shadow-emerald-500/30">
+              <div className="bg-card/60 border-2 border-border/60 rounded-[2rem] overflow-hidden flex-1 flex flex-col shadow-xl shadow-emerald-500/30">
                 <table className="w-full text-left border-collapse flex flex-col h-full">
                   <thead className="bg-muted/80 border-b-2 border-border/60 text-foreground font-black uppercase tracking-widest text-xl">
                     <tr className="flex w-full">
@@ -1324,7 +1324,7 @@ export default function MasjidDisplay() {
                 <div className="h-2 w-32 bg-primary mx-auto mt-6 rounded-full shadow-lg shadow-primary/30"></div>
               </div>
 
-              <div className="bg-card/20 backdrop-blur-3xl border-2 border-border/60 p-10 rounded-[3rem] w-full flex flex-col gap-8 shadow-2xl shadow-emerald-500/30 relative overflow-hidden">
+              <div className="bg-card/60 border-2 border-border/60 p-10 rounded-[3rem] w-full flex flex-col gap-8 shadow-2xl shadow-emerald-500/30 relative overflow-hidden">
                 <div className="absolute top-0 right-0 bg-primary text-primary-foreground font-black px-8 py-3 rounded-tr-[3rem] rounded-bl-[2.5rem] text-2xl font-mono shadow-xl">
                   {upcomingJumat?.tanggal || "Segera Hadir"}
                 </div>
@@ -1374,7 +1374,7 @@ export default function MasjidDisplay() {
                 {(pengumuman || []).slice(pengumumanPage * 2, (pengumumanPage + 1) * 2).map((item, index) => (
                   <div 
                     key={item.id} 
-                    className="bg-card/20 backdrop-blur-3xl p-6 rounded-[2rem] border-2 border-border/60 flex items-start gap-8 shadow-xl shadow-emerald-500/30"
+                    className="bg-card/60 p-6 rounded-[2rem] border-2 border-border/60 flex items-start gap-8 shadow-xl shadow-emerald-500/30"
                   >
                     <div className="h-24 w-24 rounded-[1.5rem] bg-primary border-2 border-primary-foreground/20 text-primary-foreground flex flex-col items-center justify-center font-bold tracking-tight text-center shrink-0 shadow-lg mt-1">
                       <span className="text-lg uppercase font-black opacity-90 tracking-widest leading-none">TGL</span>
@@ -1422,7 +1422,7 @@ export default function MasjidDisplay() {
               <div className="grid grid-cols-3 gap-8 w-full mt-8">
                 
                 {/* Pemasukan */}
-                <div className="bg-card/20 backdrop-blur-3xl border-2 border-border/60 rounded-[3rem] p-8 flex flex-col items-center text-center shadow-xl shadow-emerald-500/30 min-h-[300px]">
+                <div className="bg-card/60 border-2 border-border/60 rounded-[3rem] p-8 flex flex-col items-center text-center shadow-xl shadow-emerald-500/30 min-h-[300px]">
                   <div className="p-4 bg-primary/10 border-4 border-primary/20 rounded-full text-primary shadow-inner mb-4">
                     <TrendingUp className="h-10 w-10" />
                   </div>
@@ -1452,7 +1452,7 @@ export default function MasjidDisplay() {
                 </div>
 
                 {/* Pengeluaran */}
-                <div className="bg-card/20 backdrop-blur-3xl border-2 border-border/60 rounded-[3rem] p-8 flex flex-col items-center text-center shadow-xl shadow-emerald-500/30 min-h-[300px]">
+                <div className="bg-card/60 border-2 border-border/60 rounded-[3rem] p-8 flex flex-col items-center text-center shadow-xl shadow-emerald-500/30 min-h-[300px]">
                   <div className="p-4 bg-destructive/10 border-4 border-destructive/20 rounded-full text-destructive shadow-inner mb-4">
                     <TrendingDown className="h-10 w-10" />
                   </div>
@@ -1482,7 +1482,7 @@ export default function MasjidDisplay() {
                 </div>
 
                 {/* Saldo Akhir */}
-                <div className="bg-card/20 backdrop-blur-3xl border-2 border-border/60 rounded-[3rem] p-8 flex flex-col justify-between items-center text-center shadow-xl shadow-emerald-500/30 min-h-[300px]">
+                <div className="bg-card/60 border-2 border-border/60 rounded-[3rem] p-8 flex flex-col justify-between items-center text-center shadow-xl shadow-emerald-500/30 min-h-[300px]">
                   <div className="p-6 bg-secondary/10 border-4 border-secondary/20 rounded-full text-foreground shadow-inner">
                     <Wallet className="h-16 w-16" />
                   </div>
@@ -1506,7 +1506,7 @@ export default function MasjidDisplay() {
                 <p className="text-2xl text-foreground/70 font-bold mt-2">Salurkan infak terbaik Anda secara cashless melalui e-wallet / m-banking</p>
               </div>
 
-              <div className="bg-card/20 backdrop-blur-3xl border-2 border-border/60 p-10 rounded-[3rem] w-full grid grid-cols-2 gap-10 items-center shadow-2xl shadow-emerald-500/30 mt-4">
+              <div className="bg-card/60 border-2 border-border/60 p-10 rounded-[3rem] w-full grid grid-cols-2 gap-10 items-center shadow-2xl shadow-emerald-500/30 mt-4">
                 
                 {/* QR Code Column (50%) */}
                 <div className="flex flex-col items-center justify-center bg-white p-8 rounded-[2.5rem] border-4 border-border shadow-inner w-full">
@@ -1556,7 +1556,7 @@ export default function MasjidDisplay() {
                 <div className="h-2 w-32 bg-primary mx-auto mt-6 rounded-full shadow-lg shadow-primary/30"></div>
               </div>
 
-              <div className="bg-card/20 backdrop-blur-3xl border-2 border-border/60 p-14 rounded-[3rem] w-full max-w-5xl grid grid-cols-2 gap-12 shadow-xl shadow-emerald-500/30 relative mt-6 overflow-hidden">
+              <div className="bg-card/60 border-2 border-border/60 p-14 rounded-[3rem] w-full max-w-5xl grid grid-cols-2 gap-12 shadow-xl shadow-emerald-500/30 relative mt-6 overflow-hidden">
                 <div className="absolute top-0 right-0 bg-primary text-primary-foreground font-black px-8 py-3 rounded-tr-[3rem] rounded-bl-[2.5rem] text-xl font-mono shadow-xl">
                   {idulFitri.keterangan || "1 Syawal"}
                 </div>
@@ -1603,7 +1603,7 @@ export default function MasjidDisplay() {
                 <div className="h-2 w-32 bg-primary mx-auto mt-6 rounded-full shadow-lg shadow-primary/30"></div>
               </div>
 
-              <div className="bg-card/20 backdrop-blur-3xl border-2 border-border/60 p-14 rounded-[3rem] w-full max-w-5xl grid grid-cols-2 gap-12 shadow-xl shadow-emerald-500/30 relative mt-6 overflow-hidden">
+              <div className="bg-card/60 border-2 border-border/60 p-14 rounded-[3rem] w-full max-w-5xl grid grid-cols-2 gap-12 shadow-xl shadow-emerald-500/30 relative mt-6 overflow-hidden">
                 <div className="absolute top-0 right-0 bg-primary text-primary-foreground font-black px-8 py-3 rounded-tr-[3rem] rounded-bl-[2.5rem] text-xl font-mono shadow-xl">
                   {idulAdha.keterangan || "10 Dzulhijjah"}
                 </div>
@@ -1660,7 +1660,7 @@ export default function MasjidDisplay() {
                    if (diff < 0) return null;
                    const days = Math.ceil(diff / (1000 * 60 * 60 * 24));
                    return (
-                     <div className="bg-card/20 backdrop-blur-3xl border-2 border-border/60 p-8 rounded-[2rem] w-80 text-center shadow-xl shadow-primary/10 relative overflow-hidden">
+                     <div className="bg-card/60 border-2 border-border/60 p-8 rounded-[2rem] w-80 text-center shadow-xl shadow-primary/10 relative overflow-hidden">
                        <div className="absolute top-0 right-0 w-24 h-24 bg-primary/10 rounded-bl-[4rem] -z-10"></div>
                        <h3 className="text-3xl font-black text-foreground mb-2 drop-shadow-sm">Idul Fitri</h3>
                        <p className="text-foreground/70 font-medium mb-6">{idulFitri.tanggal}</p>
@@ -1677,7 +1677,7 @@ export default function MasjidDisplay() {
                    if (diff < 0) return null;
                    const days = Math.ceil(diff / (1000 * 60 * 60 * 24));
                    return (
-                     <div className="bg-card/20 backdrop-blur-3xl border-2 border-border/60 p-8 rounded-[2rem] w-80 text-center shadow-xl shadow-primary/10 relative overflow-hidden">
+                     <div className="bg-card/60 border-2 border-border/60 p-8 rounded-[2rem] w-80 text-center shadow-xl shadow-primary/10 relative overflow-hidden">
                        <div className="absolute top-0 right-0 w-24 h-24 bg-primary/10 rounded-bl-[4rem] -z-10"></div>
                        <h3 className="text-3xl font-black text-foreground mb-2 drop-shadow-sm">Idul Adha</h3>
                        <p className="text-foreground/70 font-medium mb-6">{idulAdha.tanggal}</p>
@@ -1708,7 +1708,7 @@ export default function MasjidDisplay() {
       </main>
 
       {/* FOOTER SECTION: RUNNING TEXT MARQUEE */}
-      <footer className="relative z-10 mt-6 border-t-4 border-primary/20 bg-primary/5 backdrop-blur-3xl flex items-stretch h-20 shadow-2xl shrink-0 -mx-6 -mb-6">
+      <footer className="relative z-10 mt-6 border-t-4 border-primary/20 bg-primary/10 flex items-stretch h-20 shadow-2xl shrink-0 -mx-6 -mb-6">
         
         {/* Banner label */}
         <div className="bg-gradient-to-r from-primary to-primary/80 text-primary-foreground font-black px-10 flex items-center justify-center gap-4 shrink-0 text-2xl tracking-widest uppercase shadow-xl z-20">
@@ -1730,7 +1730,7 @@ export default function MasjidDisplay() {
 
       {/* DEMO SIMULATION CONTROLS */}
       {masjidId === 'demo-masjid' && (
-        <div className="absolute bottom-24 right-8 z-[200] bg-background/90 backdrop-blur-md border-2 border-primary/50 p-4 rounded-2xl shadow-2xl flex flex-col gap-3 opacity-20 hover:opacity-100 transition-all duration-500 transform hover:scale-105 hover:-translate-y-2 group pointer-events-auto">
+        <div className="absolute bottom-24 right-8 z-[200] bg-background border-2 border-primary/50 p-4 rounded-2xl shadow-2xl flex flex-col gap-3 opacity-20 hover:opacity-100 transition-all duration-500 transform hover:scale-105 hover:-translate-y-2 group pointer-events-auto">
           <p className="text-[11px] font-black text-primary uppercase text-center tracking-widest flex items-center justify-center gap-2">
             <Settings className="w-3.5 h-3.5 animate-spin-slow" />
             Tes Animasi TV
