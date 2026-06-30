@@ -880,7 +880,7 @@ export default function MasjidDisplay() {
               {/* LARGE CLOCK / ICON */}
               <div className="mb-10 flex items-center justify-center w-full">
                 {isMenjelangSholat && (
-                  <div className="text-[16rem] font-mono font-black tabular-nums tracking-tighter drop-shadow-xl text-foreground leading-none">
+                  <div className="text-[16rem] font-mono font-black tabular-nums tracking-tighter text-foreground leading-none">
                     {(() => {
                       const m = Math.floor(Math.max(0, nextPrayer.secondsLeft) / 60);
                       const s = Math.max(0, nextPrayer.secondsLeft) % 60;
@@ -889,12 +889,12 @@ export default function MasjidDisplay() {
                   </div>
                 )}
                 {isAdzanMode && (
-                  <div className="h-64 w-64 bg-primary text-primary-foreground rounded-full flex items-center justify-center border-[12px] border-primary/20 drop-shadow-2xl shadow-[0_0_100px_rgba(0,0,0,0.2)] shadow-primary animate-pulse mt-8">
+                  <div className="h-64 w-64 bg-primary text-primary-foreground rounded-full flex items-center justify-center border-[12px] border-primary/20 shadow-2xl shadow-primary animate-pulse mt-8">
                     <Volume2 className="h-32 w-32" />
                   </div>
                 )}
                 {isIqamahMode && (
-                  <div className={`text-[16rem] font-mono font-black tabular-nums tracking-tighter drop-shadow-xl leading-none transition-colors duration-500 ${
+                  <div className={`text-[16rem] font-mono font-black tabular-nums tracking-tighter leading-none transition-colors duration-500 ${
                     (() => {
                       const jeda = getJedaIqamah(settings, nextPrayer.name);
                       const remaining = jeda + nextPrayer.secondsLeft;
