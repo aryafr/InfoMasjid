@@ -894,11 +894,11 @@ export default function MasjidDisplay() {
                 <div className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-[0.03] z-0">
                   <span className="font-serif text-[45rem] text-white">بسم الله</span>
                 </div>
-                <h1 className="text-6xl md:text-8xl font-black mb-12 text-emerald-400 text-center uppercase tracking-widest drop-shadow-lg">
+                <h1 className="text-6xl md:text-8xl font-black mb-12 text-emerald-400 text-center uppercase tracking-widest">
                   LURUSKAN & RAPATKAN SHAF
                 </h1>
                 <div className="text-4xl text-gray-400 mt-8 flex items-center gap-4">
-                  <span className="w-4 h-4 rounded-full bg-red-500 animate-pulse"></span>
+                  <span className="w-4 h-4 rounded-full bg-red-500"></span>
                   Harap nonaktifkan ponsel Anda selama sholat berlangsung
                 </div>
              </div>
