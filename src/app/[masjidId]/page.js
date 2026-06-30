@@ -112,6 +112,37 @@ export default function MasjidDisplay() {
     }
   }, []);
 
+  // Lazy Sync Trigger for TV
+  useEffect(() => {
+    if (settings?.auto_update?.cityId && jadwal && !jadwal.isMock && jadwal.last_sync_date) {
+      const today = new Date();
+      const tzOptions = settings?.timezone ? { timeZone: settings.timezone } : {};
+      const formatter = new Intl.DateTimeFormat('id-ID', {
+        ...tzOptions,
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit'
+      });
+      const parts = formatter.formatToParts(today);
+      const year = parts.find(p => p.type === 'year').value;
+      const month = parts.find(p => p.type === 'month').value;
+      const date = parts.find(p => p.type === 'day').value;
+      const dateStr = `${year}-${month}-${date}`;
+      
+      if (jadwal.last_sync_date !== dateStr) {
+        if (window._syncingJadwal === dateStr) return;
+        window._syncingJadwal = dateStr;
+        
+        fetch(`/api/cron/sync-jadwal?masjidId=${masjidId}`).then(res => {
+          if (res.ok) console.log("TV auto-sync completed");
+        }).catch(e => {
+          console.error("Failed to trigger TV auto-sync", e);
+          window._syncingJadwal = null;
+        });
+      }
+    }
+  }, [settings, jadwal, masjidId]);
+
   // Realtime States
   const [settings, setSettings] = useState(null);
   const [jadwal, setJadwal] = useState(null);

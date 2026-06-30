@@ -156,6 +156,37 @@ export default function AdminPage() {
   const [hasUnreadUpdate, setHasUnreadUpdate] = useState(false);
   const [tvUrl, setTvUrl] = useState("");
 
+  // Lazy Sync Trigger for Admin
+  useEffect(() => {
+    if (settings?.auto_update?.cityId && jadwal && !jadwal.isMock && jadwal.last_sync_date) {
+      const today = new Date();
+      const tzOptions = settings?.timezone ? { timeZone: settings.timezone } : {};
+      const formatter = new Intl.DateTimeFormat('id-ID', {
+        ...tzOptions,
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit'
+      });
+      const parts = formatter.formatToParts(today);
+      const year = parts.find(p => p.type === 'year').value;
+      const month = parts.find(p => p.type === 'month').value;
+      const date = parts.find(p => p.type === 'day').value;
+      const dateStr = `${year}-${month}-${date}`;
+      
+      if (jadwal.last_sync_date !== dateStr) {
+        if (window._syncingJadwal === dateStr) return;
+        window._syncingJadwal = dateStr;
+        
+        fetch(`/api/cron/sync-jadwal?masjidId=${masjidId}`).then(res => {
+          if (res.ok) console.log("Admin auto-sync completed");
+        }).catch(e => {
+          console.error("Failed to trigger admin auto-sync", e);
+          window._syncingJadwal = null;
+        });
+      }
+    }
+  }, [settings, jadwal, masjidId]);
+
   useEffect(() => {
     if (typeof window !== "undefined") {
       setTvUrl(`${window.location.origin}/${masjidId}`);
@@ -670,6 +701,7 @@ export default function AdminPage() {
         if (!result.status || !result.data || !result.data.jadwal) throw new Error("Data API MyQuran tidak valid");
         const timings = result.data.jadwal;
         const offsets = settingsForm.jadwal_offsets || {};
+        const dateStr = `${year}-${month}-${date}`;
         const newJadwal = {
           Imsak: applyOffset(timings.imsak, offsets.Imsak || 0),
           Subuh: applyOffset(timings.subuh, offsets.Subuh || 0),
@@ -677,7 +709,9 @@ export default function AdminPage() {
           Dzuhur: applyOffset(timings.dzuhur, offsets.Dzuhur || 0),
           Ashar: applyOffset(timings.ashar, offsets.Ashar || 0),
           Maghrib: applyOffset(timings.maghrib, offsets.Maghrib || 0),
-          Isya: applyOffset(timings.isya, offsets.Isya || 0)
+          Isya: applyOffset(timings.isya, offsets.Isya || 0),
+          last_sync_date: dateStr
+
         };
         const ok = await updateJadwal(masjidId, newJadwal);
         if (ok) {
