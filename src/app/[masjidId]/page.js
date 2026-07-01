@@ -39,32 +39,38 @@ import {
 let audioCtx = null;
 const playBeep = (isLong = false) => {
   if (typeof window === 'undefined') return;
-  if (!audioCtx) {
-    const AudioContext = window.AudioContext || window.webkitAudioContext;
-    if (AudioContext) audioCtx = new AudioContext();
-  }
-  if (!audioCtx) return;
+  setTimeout(() => {
+    try {
+      if (!audioCtx) {
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        if (AudioContext) audioCtx = new AudioContext();
+      }
+      if (!audioCtx) return;
 
-  if (audioCtx.state === 'suspended') {
-    audioCtx.resume();
-  }
+      if (audioCtx.state === 'suspended') {
+        audioCtx.resume();
+      }
 
-  const duration = isLong ? 2.5 : 0.2;
+      const duration = isLong ? 2.5 : 0.2;
 
-  const oscillator = audioCtx.createOscillator();
-  const gainNode = audioCtx.createGain();
-  
-  oscillator.type = 'sine';
-  oscillator.frequency.setValueAtTime(880, audioCtx.currentTime); // A5 note
-  
-  gainNode.gain.setValueAtTime(0.5, audioCtx.currentTime);
-  gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + duration);
-  
-  oscillator.connect(gainNode);
-  gainNode.connect(audioCtx.destination);
-  
-  oscillator.start();
-  oscillator.stop(audioCtx.currentTime + duration);
+      const oscillator = audioCtx.createOscillator();
+      const gainNode = audioCtx.createGain();
+      
+      oscillator.type = 'sine';
+      oscillator.frequency.setValueAtTime(880, audioCtx.currentTime); // A5 note
+      
+      gainNode.gain.setValueAtTime(0.5, audioCtx.currentTime);
+      gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + duration);
+      
+      oscillator.connect(gainNode);
+      gainNode.connect(audioCtx.destination);
+      
+      oscillator.start();
+      oscillator.stop(audioCtx.currentTime + duration);
+    } catch (e) {
+      console.warn("Audio playback error on TV:", e);
+    }
+  }, 0);
 };
 
 function convertGDriveLink(url) {
@@ -862,7 +868,7 @@ export default function MasjidDisplay() {
 
       {/* SHOLAT / IQAMAH / ADZAN OVERLAYS */}
       {(isMenjelangSholat || isAdzanMode || isIqamahMode || isSholatMode) && (
-        <div className={`absolute inset-0 z-[100] flex flex-col items-center justify-center transition-all duration-1000 ${
+        <div className={`absolute inset-0 z-[100] flex flex-col items-center justify-center ${
           isSholatMode
             ? "bg-black text-white" 
             : "bg-background text-foreground"
@@ -891,9 +897,6 @@ export default function MasjidDisplay() {
           {/* SHOLAT MODE (BLACK) */}
           {isSholatMode && (
              <div className="flex flex-col items-center justify-center z-10 w-full h-full">
-                <div className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-[0.03] z-0">
-                  <span className="font-serif text-[45rem] text-white">بسم الله</span>
-                </div>
                 <h1 className="text-6xl md:text-8xl font-black mb-12 text-emerald-400 text-center uppercase tracking-widest">
                   LURUSKAN & RAPATKAN SHAF
                 </h1>
@@ -920,16 +923,16 @@ export default function MasjidDisplay() {
                   </div>
                 )}
                 {isAdzanMode && (
-                  <div className="h-64 w-64 bg-primary text-primary-foreground rounded-full flex items-center justify-center border-[12px] border-primary/20 shadow-2xl shadow-primary animate-pulse mt-8">
+                  <div className="h-64 w-64 bg-primary text-primary-foreground rounded-full flex items-center justify-center border-[12px] border-primary/20 shadow-2xl shadow-primary mt-8">
                     <Volume2 className="h-32 w-32" />
                   </div>
                 )}
                 {isIqamahMode && (
-                  <div className={`text-[16rem] font-mono font-black tabular-nums tracking-tighter leading-none transition-colors duration-500 ${
+                  <div className={`text-[16rem] font-mono font-black tabular-nums tracking-tighter leading-none ${
                     (() => {
                       const jeda = getJedaIqamah(settings, nextPrayer.name);
                       const remaining = jeda + nextPrayer.secondsLeft;
-                      return remaining > 0 && remaining <= 10 ? "text-red-500 scale-110 animate-pulse" : "text-foreground";
+                      return remaining > 0 && remaining <= 10 ? "text-red-500" : "text-foreground";
                     })()
                   }`}>
                     {(() => {
