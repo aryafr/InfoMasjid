@@ -185,7 +185,9 @@ export default function MasjidDisplay() {
       return jDate >= today;
     }).sort((a, b) => new Date(a.tanggal) - new Date(b.tanggal));
     
-    return validList.length > 0 ? validList[0] : null;
+    if (validList.length > 0) return validList[0];
+    const sortedAll = [...list].filter(j => j.tanggal).sort((a, b) => new Date(a.tanggal) - new Date(b.tanggal));
+    return sortedAll.length > 0 ? sortedAll[sortedAll.length - 1] : null;
   }, [sholatJumat]);
   const [pengumuman, setPengumuman] = useState([]);
   const [keuangan, setKeuangan] = useState([]);
@@ -1122,7 +1124,7 @@ export default function MasjidDisplay() {
                     <p className="text-lg text-foreground/70 font-bold mt-2 uppercase tracking-wide">Khatib & Imam</p>
                   </div>
                   <div className="bg-muted/80 px-6 py-3 rounded-2xl border-2 border-border text-lg text-foreground font-bold tabular-nums">
-                    {upcomingJumat?.tanggal ? new Date(sholatJumat.tanggal).toLocaleDateString("id-ID", { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }) : "Loading..."}
+                    {upcomingJumat?.tanggal ? new Date(upcomingJumat.tanggal).toLocaleDateString("id-ID", { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }) : "Loading..."}
                   </div>
                 </div>
               </div>
@@ -1329,7 +1331,7 @@ export default function MasjidDisplay() {
 
               <div className="bg-card/60 border-2 border-border/60 p-10 rounded-[3rem] w-full flex flex-col gap-8 shadow-2xl shadow-emerald-500/30 relative overflow-hidden">
                 <div className="absolute top-0 right-0 bg-primary text-primary-foreground font-black px-8 py-3 rounded-tr-[3rem] rounded-bl-[2.5rem] text-2xl font-mono shadow-xl">
-                  {upcomingJumat?.tanggal || "Segera Hadir"}
+                  {upcomingJumat?.tanggal ? new Date(upcomingJumat.tanggal).toLocaleDateString("id-ID", { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }) : "Segera Hadir"}
                 </div>
                 
                 <div className="flex items-center gap-8 border-b-2 border-border/50 pb-6 mt-4">
