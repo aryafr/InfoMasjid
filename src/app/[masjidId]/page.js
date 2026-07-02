@@ -208,6 +208,7 @@ export default function MasjidDisplay() {
   const currentSlide = activeSlides[currentSlideIndex] || { url: "welcome", name: "Dashboard" };
   const [isIqamahMode, setIsIqamahMode] = useState(false);
   const [isSholatMode, setIsSholatMode] = useState(false);
+  const [isJumatMode, setIsJumatMode] = useState(false);
   const [isMenjelangSholat, setIsMenjelangSholat] = useState(false);
   const [isAdzanMode, setIsAdzanMode] = useState(false);
   const [isMurottalMode, setIsMurottalMode] = useState(false);
@@ -252,16 +253,22 @@ export default function MasjidDisplay() {
   const getJedaIqamah = (settings, prayerName) => {
     if (!settings) return 10 * 60;
     const w = prayerName.toLowerCase();
+    const isFridayToday = new Date().getDay() === 5;
+    const key = (isFridayToday && (w === "jumat" || w === "dzuhur")) ? "jumat" : w;
     const v = settings.jeda_iqamah;
-    if (typeof v === 'object' && v[w] !== undefined) return v[w] * 60;
+    if (typeof v === 'object' && v[key] !== undefined) return v[key] * 60;
+    if (key === "jumat") return 0 * 60;
     return (typeof v === 'number' ? v : 10) * 60;
   };
 
   const getDurasiSholat = (settings, prayerName) => {
     if (!settings) return 15 * 60;
     const w = prayerName.toLowerCase();
+    const isFridayToday = new Date().getDay() === 5;
+    const key = (isFridayToday && (w === "jumat" || w === "dzuhur")) ? "jumat" : w;
     const v = settings.durasi_sholat;
-    if (typeof v === 'object' && v[w] !== undefined) return v[w] * 60;
+    if (typeof v === 'object' && v[key] !== undefined) return v[key] * 60;
+    if (key === "jumat") return 60 * 60;
     return (typeof v === 'number' ? v : 15) * 60;
   };
 
@@ -282,9 +289,12 @@ export default function MasjidDisplay() {
     
     const currentRealSeconds = hh * 3600 + mm * 60 + ss;
     
+    const isFridayToday = new Date().getDay() === 5;
+    const dzuhurLabel = isFridayToday ? "Jumat" : "Dzuhur";
+    
     const prayers = [
       { name: "Subuh", timeStr: jadwal.Subuh },
-      { name: "Dzuhur", timeStr: jadwal.Dzuhur },
+      { name: dzuhurLabel, timeStr: jadwal.Dzuhur },
       { name: "Ashar", timeStr: jadwal.Ashar },
       { name: "Maghrib", timeStr: jadwal.Maghrib },
       { name: "Isya", timeStr: jadwal.Isya }
@@ -372,9 +382,11 @@ export default function MasjidDisplay() {
       }
 
       if (jadwal) {
+        const isFridayToday = new Date().getDay() === 5;
+        const dzuhurLabel = isFridayToday ? "Jumat" : "Dzuhur";
         const prayers = [
           { name: "Subuh", timeStr: jadwal.Subuh },
-          { name: "Dzuhur", timeStr: jadwal.Dzuhur },
+          { name: dzuhurLabel, timeStr: jadwal.Dzuhur },
           { name: "Ashar", timeStr: jadwal.Ashar },
           { name: "Maghrib", timeStr: jadwal.Maghrib },
           { name: "Isya", timeStr: jadwal.Isya }
@@ -399,7 +411,10 @@ export default function MasjidDisplay() {
             
             const jedaIqamah = getJedaIqamah(settings, prayer.name);
             const durasiSholat = getDurasiSholat(settings, prayer.name);
-            const totalDuration = jedaIqamah + durasiSholat;
+            const isFridayPrayer = (new Date().getDay() === 5) && (prayer.name === "Jumat" || prayer.name === "Dzuhur");
+            const adzanDuration = isFridayPrayer ? 180 : Math.min(60, jedaIqamah);
+            const effectiveJeda = isFridayPrayer ? adzanDuration + jedaIqamah : jedaIqamah;
+            const totalDuration = effectiveJeda + durasiSholat;
 
             // If the prayer hasn't passed OR it passed but we're still in Iqamah/Sholat mode
             if (currentSeconds < prayerSeconds + totalDuration) {
@@ -409,19 +424,23 @@ export default function MasjidDisplay() {
               let adzanMode = false;
               let iqamahMode = false;
               let sholatMode = false;
-              let murottalMode = false;
-
-              const adzanDuration = Math.min(60, jedaIqamah);
+              let jumatMode = false;
 
               // Murottal is handled globally now. We don't trigger it here.
               if (secondsLeft <= 300 && secondsLeft > 0) {
                 menjelangMode = true;
               } else if (secondsLeft <= 0 && secondsLeft > -adzanDuration) {
                 adzanMode = true;
-              } else if (secondsLeft <= -adzanDuration && secondsLeft > -jedaIqamah) {
+              } else if (!isFridayPrayer && secondsLeft <= -adzanDuration && secondsLeft > -effectiveJeda) {
                 iqamahMode = true;
-              } else if (secondsLeft <= -jedaIqamah && secondsLeft > -totalDuration) {
-                sholatMode = true;
+              } else if (isFridayPrayer && secondsLeft <= -adzanDuration && secondsLeft > -effectiveJeda) {
+                iqamahMode = (jedaIqamah > 0); // Only show Menjelang Iqamah/Khotbah if user set > 0 jeda in admin
+              } else if (secondsLeft <= -effectiveJeda && secondsLeft > -totalDuration) {
+                if (isFridayPrayer) {
+                  jumatMode = true;
+                } else {
+                  sholatMode = true;
+                }
               }
 
               // setIsMurottalMode(murottalMode); // Removed, handled below
@@ -429,6 +448,7 @@ export default function MasjidDisplay() {
               setIsAdzanMode(adzanMode);
               setIsIqamahMode(iqamahMode);
               setIsSholatMode(sholatMode);
+              setIsJumatMode(jumatMode);
 
               setNextPrayer({
                 name: prayer.name,
@@ -462,6 +482,7 @@ export default function MasjidDisplay() {
           setIsAdzanMode(false);
           setIsIqamahMode(false);
           setIsSholatMode(false);
+          setIsJumatMode(false);
           
           setNextPrayer({
             name: `${firstPrayer.name} (Besok)`,
@@ -513,10 +534,10 @@ export default function MasjidDisplay() {
 
   useEffect(() => {
     // Calculate global Murottal Mode
-    const isAnyPrayerMode = isMenjelangSholat || isAdzanMode || isIqamahMode || isSholatMode;
+    const isAnyPrayerMode = isMenjelangSholat || isAdzanMode || isIqamahMode || isSholatMode || isJumatMode;
     const shouldPlayVideo = settings?.murottal?.enabled && !videoFinished && !isAnyPrayerMode && settings?.murottal?.url;
     setIsMurottalMode(shouldPlayVideo);
-  }, [settings?.murottal?.enabled, videoFinished, isMenjelangSholat, isAdzanMode, isIqamahMode, isSholatMode, settings?.murottal?.url]);
+  }, [settings?.murottal?.enabled, videoFinished, isMenjelangSholat, isAdzanMode, isIqamahMode, isSholatMode, isJumatMode, settings?.murottal?.url]);
 
   useEffect(() => {
     if (isMurottalMode) {
@@ -839,6 +860,7 @@ export default function MasjidDisplay() {
   
   const sortedPemasukanKeys = Object.keys(breakdownPemasukan).sort((a, b) => breakdownPemasukan[b] - breakdownPemasukan[a]).slice(0, 3);
   const sortedPengeluaranKeys = Object.keys(breakdownPengeluaran).sort((a, b) => breakdownPengeluaran[b] - breakdownPengeluaran[a]).slice(0, 3);
+  const dzuhurLabel = new Date().getDay() === 5 ? "Jumat" : "Dzuhur";
 
   return (
     <div className="w-screen h-screen overflow-hidden flex items-center justify-center bg-black">
@@ -869,19 +891,19 @@ export default function MasjidDisplay() {
       )}
 
       {/* SHOLAT / IQAMAH / ADZAN OVERLAYS */}
-      {(isMenjelangSholat || isAdzanMode || isIqamahMode || isSholatMode) && (
+      {(isMenjelangSholat || isAdzanMode || isIqamahMode || isSholatMode || isJumatMode) && (
         <div className={`absolute inset-0 z-[100] flex flex-col items-center justify-center ${
-          isSholatMode
+          isSholatMode || isJumatMode
             ? "bg-black text-white" 
             : "bg-background text-foreground"
         }`}>
 
           {/* Background Decorations for non-sholat non-murottal mode */}
-          {(!isSholatMode && !isMurottalMode) && (
+          {(!isSholatMode && !isJumatMode && !isMurottalMode) && (
             <>
-              {/* Premium Glow */}
-              <div className="absolute top-[-20%] left-[-10%] w-[50%] h-[50%] bg-primary/20 rounded-[100%] blur-[160px] pointer-events-none z-0"></div>
-              <div className="absolute bottom-[-20%] right-[-10%] w-[50%] h-[50%] bg-secondary/20 rounded-[100%] blur-[160px] pointer-events-none z-0"></div>
+              {/* Premium Glow (No GPU Blur Filter to prevent TV freeze) */}
+              <div className="absolute top-0 left-0 w-[50%] h-[50%] bg-gradient-to-br from-primary/15 to-transparent rounded-full pointer-events-none z-0"></div>
+              <div className="absolute bottom-0 right-0 w-[50%] h-[50%] bg-gradient-to-tl from-secondary/15 to-transparent rounded-full pointer-events-none z-0"></div>
 
               {/* Islamic Pattern / Border */}
               <div className="absolute inset-8 border-[6px] border-primary/30 rounded-[4rem] pointer-events-none z-0 overflow-hidden shadow-2xl">
@@ -905,6 +927,27 @@ export default function MasjidDisplay() {
                 <div className="text-4xl text-gray-400 mt-8 flex items-center gap-4">
                   <span className="w-4 h-4 rounded-full bg-red-500"></span>
                   Harap nonaktifkan ponsel Anda selama sholat berlangsung
+                </div>
+             </div>
+          )}
+
+          {/* JUMAT KHOTBAH MODE (BLACK) */}
+          {isJumatMode && (
+             <div className="flex flex-col items-center justify-center z-10 w-full h-full px-10">
+                <h1 className="text-5xl md:text-7xl font-black mb-8 text-emerald-400 text-center uppercase tracking-widest leading-tight">
+                  MOHON TENANG & SIMAK KHOTBAH DENGAN KHUSYUK
+                </h1>
+                <div className="max-w-5xl bg-card/20 border-2 border-emerald-500/40 p-10 rounded-[3rem] text-center my-6 shadow-2xl">
+                  <p className="text-3xl md:text-4xl text-white/90 font-serif italic leading-relaxed mb-6">
+                    "Barangsiapa yang berkata kepada temannya pada hari Jumat: 'Diamlah!', padahal imam sedang berkhotbah, maka sungguh ibadah jumatnya menjadi sia-sia."
+                  </p>
+                  <span className="text-2xl font-black text-emerald-400 uppercase tracking-wider block">
+                    — HR. Bukhari no. 934 & Muslim no. 851 —
+                  </span>
+                </div>
+                <div className="text-3xl text-gray-400 mt-6 flex items-center gap-4">
+                  <span className="w-4 h-4 rounded-full bg-red-500"></span>
+                  Harap nonaktifkan atau bisukan ponsel Anda demi kekhusyukan bersama
                 </div>
              </div>
           )}
@@ -1138,7 +1181,9 @@ export default function MasjidDisplay() {
                     <Clock className="h-6 w-6" /> Waktu Sholat
                   </h3>
                   <div className="flex flex-col gap-2">
-                    {["Imsak", "Subuh", "Terbit", "Dzuhur", "Ashar", "Maghrib", "Isya"].map((name) => (
+                    {["Imsak", "Subuh", "Terbit", dzuhurLabel, "Ashar", "Maghrib", "Isya"].map((name) => {
+                      const timeKey = name === "Jumat" ? "Dzuhur" : name;
+                      return (
                       <div 
                         key={name} 
                         className={`flex items-center justify-between px-5 py-3 rounded-2xl transition-all border-2 ${
@@ -1149,10 +1194,11 @@ export default function MasjidDisplay() {
                       >
                         <span className="text-xl font-bold tracking-wide uppercase">{name}</span>
                         <span className="text-3xl font-mono font-black tabular-nums tracking-tighter">
-                          {jadwal[name]}
+                          {jadwal[timeKey]}
                         </span>
                       </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 </div>
 
@@ -1196,7 +1242,8 @@ export default function MasjidDisplay() {
               </div>
               
               <div className="grid grid-cols-7 gap-3">
-                {["Imsak", "Subuh", "Terbit", "Dzuhur", "Ashar", "Maghrib", "Isya"].map((name) => {
+                {["Imsak", "Subuh", "Terbit", dzuhurLabel, "Ashar", "Maghrib", "Isya"].map((name) => {
+                  const timeKey = name === "Jumat" ? "Dzuhur" : name;
                   const isActive = nextPrayer.name === name;
                   return (
                     <div 
@@ -1217,7 +1264,7 @@ export default function MasjidDisplay() {
                       
                       <div className="flex flex-col items-center gap-3 w-full">
                         <span className="text-4xl font-mono font-black tracking-tighter tabular-nums drop-shadow-md">
-                          {jadwal[name]}
+                          {jadwal[timeKey]}
                         </span>
                         {isActive && (
                           <span className="text-lg tracking-widest uppercase font-black text-primary-foreground bg-white/20 border-2 border-white/30 px-6 py-2 rounded-full animate-pulse mt-2 shadow-lg">

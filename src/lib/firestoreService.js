@@ -397,6 +397,24 @@ export async function deletePengumuman(masjidId, id) {
   }
 }
 
+export async function updatePengumuman(masjidId, payload) {
+  const { id, ...data } = payload;
+  if (isMockFirebase || masjidId === 'demo-masjid') {
+    const existing = getLocalData(`masjids/${masjidId}/pengumuman`, mock.defaultPengumuman);
+    setLocalData(`masjids/${masjidId}/pengumuman`, existing.map(item => item.id === id ? { ...item, ...data } : item));
+    return true;
+  }
+
+  try {
+    const docRef = doc(db, 'masjids', masjidId, 'pengumuman', id);
+    await updateDoc(docRef, data);
+    return true;
+  } catch (error) {
+    console.error("Error updating pengumuman:", error);
+    return false;
+  }
+}
+
 export async function addKeuangan(masjidId, data) {
   if (isMockFirebase || masjidId === 'demo-masjid') {
     const existing = getLocalData(`masjids/${masjidId}/keuangan`, mock.defaultKeuangan);

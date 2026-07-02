@@ -11,7 +11,7 @@ import {
   TrendingUp, CreditCard, Activity, MoreVertical, Building,
   ArrowUpCircle, Menu, X, Tag, Ticket, Phone,
   Copy, Check, Download, ChevronLeft, ChevronRight,
-  Megaphone, Edit
+  Megaphone, Edit, MessageCircle
 } from "lucide-react";
 import Image from "next/image";
 import ThemeToggle from "@/components/ThemeToggle";
@@ -35,6 +35,14 @@ import {
 } from "@/lib/firestoreService";
 
 const PACKAGE_PRICE = 250000; // Assumption based on previous logic
+
+const formatWaNumber = (num) => {
+  if (!num) return "";
+  const clean = num.toString().replace(/\D/g, "");
+  if (clean.startsWith("0")) return "62" + clean.slice(1);
+  if (clean.startsWith("8")) return "62" + clean;
+  return clean;
+};
 
 export default function SuperAdminPage() {
   const [user, setUser] = useState(null);
@@ -721,9 +729,15 @@ export default function SuperAdminPage() {
                         <td className="px-6 py-4">
                           <p className="text-sm font-medium">{m.email || "-"}</p>
                           {m.wa_number && (
-                            <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1.5 font-medium">
-                              <Phone className="w-3 h-3 text-emerald-500" /> {m.wa_number}
-                            </p>
+                            <a 
+                              href={`https://wa.me/${formatWaNumber(m.wa_number)}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-xs text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 dark:hover:text-emerald-300 mt-1 flex items-center gap-1.5 font-bold hover:underline w-fit"
+                              title="Chat WhatsApp Customer"
+                            >
+                              <Phone className="w-3 h-3 text-emerald-500 fill-emerald-500/20" /> {m.wa_number}
+                            </a>
                           )}
                         </td>
                         <td className="px-6 py-4">
@@ -755,6 +769,18 @@ export default function SuperAdminPage() {
                         </td>
                         <td className="px-6 py-4">
                           <div className="flex gap-2 justify-end md:opacity-40 md:group-hover:opacity-100 transition-opacity">
+                            {m.wa_number && (
+                              <a 
+                                href={`https://wa.me/${formatWaNumber(m.wa_number)}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                title={`Chat WA: ${m.wa_number}`}
+                              >
+                                <Button variant="ghost" size="icon" className="w-8 h-8 rounded-full bg-emerald-500/10 hover:bg-emerald-500 text-emerald-600 dark:text-emerald-400 hover:text-white">
+                                  <MessageCircle className="w-4 h-4" />
+                                </Button>
+                              </a>
+                            )}
                             <a href={`/${m.id}`} target="_blank" title="Lihat Layar TV">
                               <Button variant="ghost" size="icon" className="w-8 h-8 rounded-full bg-accent hover:bg-primary text-foreground hover:text-primary-foreground">
                                 <ExternalLink className="w-4 h-4" />

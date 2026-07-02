@@ -58,6 +58,7 @@ import {
   updateJadwal,
   updateSholatJumat,
   addPengumuman,
+  updatePengumuman,
   deletePengumuman,
   addKeuangan,
   deleteKeuangan,
@@ -265,6 +266,7 @@ export default function AdminPage() {
 
   // Inputs for new items
   const [newPengumuman, setNewPengumuman] = useState({ judul: "", isi: "", tanggal: "" });
+  const [editingPengumumanId, setEditingPengumumanId] = useState(null);
   const [newKeuangan, setNewKeuangan] = useState({
     deskripsi: "", kategori: "", pemasukan: 0, pengeluaran: 0, tanggal: ""
   });
@@ -416,15 +418,19 @@ export default function AdminPage() {
            };
         }
         if (!newData.jeda_iqamah) {
-           newData.jeda_iqamah = { subuh: 10, dzuhur: 10, ashar: 10, maghrib: 10, isya: 10 };
+           newData.jeda_iqamah = { subuh: 10, dzuhur: 10, jumat: 0, ashar: 10, maghrib: 10, isya: 10 };
+        } else if (newData.jeda_iqamah.jumat === undefined) {
+           newData.jeda_iqamah.jumat = 0;
         }
         if (typeof newData.durasi_sholat === 'number') {
            newData.durasi_sholat = {
-             subuh: newData.durasi_sholat, dzuhur: newData.durasi_sholat, ashar: newData.durasi_sholat, maghrib: newData.durasi_sholat, isya: newData.durasi_sholat
+             subuh: newData.durasi_sholat, dzuhur: newData.durasi_sholat, jumat: 60, ashar: newData.durasi_sholat, maghrib: newData.durasi_sholat, isya: newData.durasi_sholat
            };
         }
         if (!newData.durasi_sholat) {
-           newData.durasi_sholat = { subuh: 15, dzuhur: 15, ashar: 15, maghrib: 15, isya: 15 };
+           newData.durasi_sholat = { subuh: 15, dzuhur: 15, jumat: 60, ashar: 15, maghrib: 15, isya: 15 };
+        } else if (newData.durasi_sholat.jumat === undefined) {
+           newData.durasi_sholat.jumat = 60;
         }
         if (!newData.running_text_speed) {
            newData.running_text_speed = 45;
@@ -746,16 +752,30 @@ export default function AdminPage() {
   const handleAddPengumuman = (e) => {
     e.preventDefault();
     if (!newPengumuman.isi || !newPengumuman.judul) return;
-    executeSave(addPengumuman, {
-      judul: newPengumuman.judul,
-      isi: newPengumuman.isi,
-      tanggal: newPengumuman.tanggal || new Date().toISOString().split('T')[0]
-    }, "Pengumuman baru berhasil ditambahkan!");
+    if (editingPengumumanId) {
+      executeSave(updatePengumuman, {
+        id: editingPengumumanId,
+        judul: newPengumuman.judul,
+        isi: newPengumuman.isi,
+        tanggal: newPengumuman.tanggal || new Date().toISOString().split('T')[0]
+      }, "Pengumuman berhasil diperbarui!");
+      setEditingPengumumanId(null);
+    } else {
+      executeSave(addPengumuman, {
+        judul: newPengumuman.judul,
+        isi: newPengumuman.isi,
+        tanggal: newPengumuman.tanggal || new Date().toISOString().split('T')[0]
+      }, "Pengumuman baru berhasil ditambahkan!");
+    }
     setNewPengumuman({ judul: "", isi: "", tanggal: "" });
   };
 
   const handleDeletePengumuman = (id) => {
     showConfirm("Hapus Pengumuman", "Hapus pengumuman ini?", () => {
+      if (editingPengumumanId === id) {
+        setEditingPengumumanId(null);
+        setNewPengumuman({ judul: "", isi: "", tanggal: "" });
+      }
       executeSave(deletePengumuman, id, "Pengumuman berhasil dihapus!");
     });
   };
@@ -2071,24 +2091,30 @@ export default function AdminPage() {
 
                   <div className="border-t border-border/50 pt-6 mt-6">
                     <h3 className="text-lg font-bold text-foreground mb-4">Pengaturan Jeda Iqamah & Durasi Sholat</h3>
-                    <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-                      {['subuh', 'dzuhur', 'ashar', 'maghrib', 'isya'].map((waktu) => (
+                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+                      {['subuh', 'dzuhur', 'jumat', 'ashar', 'maghrib', 'isya'].map((waktu) => (
                         <div key={waktu} className="bg-muted/30 p-4 rounded-2xl border border-border/50">
-                           <label className="text-sm font-bold text-foreground capitalize mb-3 block">{waktu}</label>
+                           <label className="text-sm font-bold text-foreground capitalize mb-3 block">
+                             {waktu === 'jumat' ? 'Jumat (Khotbah)' : waktu}
+                           </label>
                            <div className="flex flex-col gap-3">
                              <div>
-                               <label className="text-xs text-muted-foreground mb-1 block">Jeda Iqamah (Menit)</label>
+                               <label className="text-xs text-muted-foreground mb-1 block">
+                                 {waktu === 'jumat' ? 'Jeda Adzan -> Khotbah (Mnt)' : 'Jeda Iqamah (Menit)'}
+                               </label>
                                <Input 
                                  type="number" 
-                                 value={settingsForm.jeda_iqamah?.[waktu] ?? 10}
+                                 value={settingsForm.jeda_iqamah?.[waktu] ?? (waktu === 'jumat' ? 0 : 10)}
                                  onChange={(e) => setSettingsForm({ ...settingsForm, jeda_iqamah: { ...(settingsForm.jeda_iqamah || {}), [waktu]: Number(e.target.value) } })}
                                />
                              </div>
                              <div>
-                               <label className="text-xs text-muted-foreground mb-1 block">Durasi Sholat (Menit)</label>
+                               <label className="text-xs text-muted-foreground mb-1 block">
+                                 {waktu === 'jumat' ? 'Durasi Khotbah & Sholat (Mnt)' : 'Durasi Sholat (Menit)'}
+                               </label>
                                <Input 
                                  type="number" 
-                                 value={settingsForm.durasi_sholat?.[waktu] ?? 15}
+                                 value={settingsForm.durasi_sholat?.[waktu] ?? (waktu === 'jumat' ? 60 : 15)}
                                  onChange={(e) => setSettingsForm({ ...settingsForm, durasi_sholat: { ...(settingsForm.durasi_sholat || {}), [waktu]: Number(e.target.value) } })}
                                />
                              </div>
@@ -2238,7 +2264,9 @@ export default function AdminPage() {
                    <div className="p-2.5 bg-primary/10 rounded-xl text-primary">
                      <Megaphone className="w-5 h-5" />
                    </div>
-                   <h3 className="text-lg font-bold text-foreground">Buat Agenda Baru</h3>
+                   <h3 className="text-lg font-bold text-foreground">
+                      {editingPengumumanId ? "Edit Agenda Pengumuman" : "Buat Agenda Baru"}
+                    </h3>
                 </div>
                 <form onSubmit={handleAddPengumuman} className="flex flex-col gap-5">
                   <div>
@@ -2276,13 +2304,27 @@ export default function AdminPage() {
                     />
                   </div>
 
-                  <button 
-                    type="submit" 
-                    disabled={isSaving}
-                    className="bg-primary text-primary-foreground font-bold p-3.5 rounded-xl shadow-lg hover:shadow-xl hover:-translate-y-0.5 transition-all flex justify-center items-center gap-2 cursor-pointer mt-2 disabled:opacity-50"
-                  >
-                    {isSaving ? <span className="animate-spin text-xl">⏳</span> : <><Plus className="h-5 w-5" /> Publikasikan Agenda</>}
-                  </button>
+                  <div className="flex gap-2 mt-2">
+                    <button 
+                      type="submit" 
+                      disabled={isSaving}
+                      className="flex-1 bg-primary text-primary-foreground font-bold p-3.5 rounded-xl shadow-lg hover:shadow-xl hover:-translate-y-0.5 transition-all flex justify-center items-center gap-2 cursor-pointer disabled:opacity-50"
+                    >
+                      {isSaving ? <span className="animate-spin text-xl">⏳</span> : (editingPengumumanId ? <><Edit2 className="h-5 w-5" /> Simpan Perubahan</> : <><Plus className="h-5 w-5" /> Publikasikan Agenda</>)}
+                    </button>
+                    {editingPengumumanId && (
+                      <button 
+                        type="button" 
+                        onClick={() => {
+                          setEditingPengumumanId(null);
+                          setNewPengumuman({ judul: "", isi: "", tanggal: "" });
+                        }}
+                        className="bg-muted text-foreground font-bold px-5 rounded-xl hover:bg-muted/80 transition-all cursor-pointer"
+                      >
+                        Batal
+                      </button>
+                    )}
+                  </div>
                 </form>
               </div>
 
@@ -2307,13 +2349,27 @@ export default function AdminPage() {
                         </div>
                         <p className="text-sm text-foreground/80 leading-relaxed line-clamp-3">{item.isi}</p>
                       </div>
-                      <button 
-                        onClick={() => handleDeletePengumuman(item.id)}
-                        className="text-muted-foreground hover:text-destructive p-2 hover:bg-destructive/10 rounded-xl transition-colors cursor-pointer shrink-0 md:opacity-0 group-hover:opacity-100"
-                        title="Hapus Agenda"
-                      >
-                        <Trash2 className="h-5 w-5" />
-                      </button>
+                      <div className="flex items-center gap-1 shrink-0 md:opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button 
+                          type="button"
+                          onClick={() => {
+                            setNewPengumuman({ judul: item.judul || "", isi: item.isi || "", tanggal: item.tanggal || "" });
+                            setEditingPengumumanId(item.id);
+                          }}
+                          className="text-muted-foreground hover:text-primary p-2 hover:bg-primary/10 rounded-xl transition-colors cursor-pointer"
+                          title="Edit Agenda"
+                        >
+                          <Edit2 className="h-5 w-5" />
+                        </button>
+                        <button 
+                          type="button"
+                          onClick={() => handleDeletePengumuman(item.id)}
+                          className="text-muted-foreground hover:text-destructive p-2 hover:bg-destructive/10 rounded-xl transition-colors cursor-pointer"
+                          title="Hapus Agenda"
+                        >
+                          <Trash2 className="h-5 w-5" />
+                        </button>
+                      </div>
                     </div>
                   ))}
                   {(!pengumuman || pengumuman.length === 0) && (
