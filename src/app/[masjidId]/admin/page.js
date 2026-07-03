@@ -561,12 +561,14 @@ export default function AdminPage() {
     setIsSaving(true);
     try {
       // Update Masjid Root
-      await setDoc(doc(db, "masjids", masjidId), {
-        nama_aplikasi: profileForm.nama_masjid,
-        email: profileForm.email,
-        wa_number: profileForm.wa_number,
-        alamat_lengkap: profileForm.alamat_lengkap
-      }, { merge: true });
+      if (!isMockFirebase && masjidId !== 'demo-masjid') {
+        await setDoc(doc(db, "masjids", masjidId), {
+          nama_aplikasi: profileForm.nama_masjid,
+          email: profileForm.email,
+          wa_number: profileForm.wa_number,
+          alamat_lengkap: profileForm.alamat_lengkap
+        }, { merge: true });
+      }
 
       // Update Settings Global
       const updatedSettings = {
@@ -577,7 +579,7 @@ export default function AdminPage() {
       await updateSettings(masjidId, updatedSettings);
 
       // Update User Mapping
-      if (auth.currentUser) {
+      if (auth.currentUser && !isMockFirebase && masjidId !== 'demo-masjid') {
         await setDoc(doc(db, "users", auth.currentUser.uid), {
           email: profileForm.email,
           wa_number: profileForm.wa_number

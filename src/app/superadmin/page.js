@@ -118,7 +118,9 @@ export default function SuperAdminPage() {
       const querySnapshot = await getDocs(collection(db, "masjids"));
       const data = [];
       querySnapshot.forEach((doc) => {
-        data.push({ id: doc.id, ...doc.data() });
+        if (doc.id !== "demo-masjid") {
+          data.push({ id: doc.id, ...doc.data() });
+        }
       });
       setMasjids(data);
     } catch (error) {
