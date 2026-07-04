@@ -839,27 +839,41 @@ export default function MasjidDisplay() {
 
   // Remove currentSlide here since it's moved up
 
-  // Calculate financial sum (All-time)
-  const totalPemasukan = (keuangan || []).reduce((sum, item) => sum + Number(item.pemasukan || 0), 0);
-  const totalPengeluaran = (keuangan || []).reduce((sum, item) => sum + Number(item.pengeluaran || 0), 0);
-  const saldo = totalPemasukan - totalPengeluaran;
+  // Calculate financial sum & breakdowns (with useMemo to prevent 1s GC leaks on Android TV)
+  const financialSummary = useMemo(() => {
+    const totalPemasukan = (keuangan || []).reduce((sum, item) => sum + Number(item.pemasukan || 0), 0);
+    const totalPengeluaran = (keuangan || []).reduce((sum, item) => sum + Number(item.pengeluaran || 0), 0);
+    const saldo = totalPemasukan - totalPengeluaran;
 
-  // TV Financial Sum based on filter
-  const totalPemasukanTV = keuanganFilteredTV.reduce((sum, item) => sum + Number(item.pemasukan || 0), 0);
-  const totalPengeluaranTV = keuanganFilteredTV.reduce((sum, item) => sum + Number(item.pengeluaran || 0), 0);
+    const totalPemasukanTV = keuanganFilteredTV.reduce((sum, item) => sum + Number(item.pemasukan || 0), 0);
+    const totalPengeluaranTV = keuanganFilteredTV.reduce((sum, item) => sum + Number(item.pengeluaran || 0), 0);
 
-  // Calculate breakdown for summary
-  const breakdownPemasukan = (keuangan || []).filter(i => i.pemasukan > 0).reduce((acc, curr) => {
-    acc[curr.kategori || "Lainnya"] = (acc[curr.kategori || "Lainnya"] || 0) + Number(curr.pemasukan);
-    return acc;
-  }, {});
-  const breakdownPengeluaran = (keuangan || []).filter(i => i.pengeluaran > 0).reduce((acc, curr) => {
-    acc[curr.kategori || "Lainnya"] = (acc[curr.kategori || "Lainnya"] || 0) + Number(curr.pengeluaran);
-    return acc;
-  }, {});
-  
-  const sortedPemasukanKeys = Object.keys(breakdownPemasukan).sort((a, b) => breakdownPemasukan[b] - breakdownPemasukan[a]).slice(0, 3);
-  const sortedPengeluaranKeys = Object.keys(breakdownPengeluaran).sort((a, b) => breakdownPengeluaran[b] - breakdownPengeluaran[a]).slice(0, 3);
+    const breakdownPemasukan = (keuangan || []).filter(i => i.pemasukan > 0).reduce((acc, curr) => {
+      acc[curr.kategori || "Lainnya"] = (acc[curr.kategori || "Lainnya"] || 0) + Number(curr.pemasukan);
+      return acc;
+    }, {});
+    const breakdownPengeluaran = (keuangan || []).filter(i => i.pengeluaran > 0).reduce((acc, curr) => {
+      acc[curr.kategori || "Lainnya"] = (acc[curr.kategori || "Lainnya"] || 0) + Number(curr.pengeluaran);
+      return acc;
+    }, {});
+    
+    const sortedPemasukanKeys = Object.keys(breakdownPemasukan).sort((a, b) => breakdownPemasukan[b] - breakdownPemasukan[a]).slice(0, 3);
+    const sortedPengeluaranKeys = Object.keys(breakdownPengeluaran).sort((a, b) => breakdownPengeluaran[b] - breakdownPengeluaran[a]).slice(0, 3);
+
+    return {
+      totalPemasukan, totalPengeluaran, saldo,
+      totalPemasukanTV, totalPengeluaranTV,
+      breakdownPemasukan, breakdownPengeluaran,
+      sortedPemasukanKeys, sortedPengeluaranKeys
+    };
+  }, [keuangan, keuanganFilteredTV]);
+
+  const {
+    totalPemasukan, totalPengeluaran, saldo,
+    totalPemasukanTV, totalPengeluaranTV,
+    breakdownPemasukan, breakdownPengeluaran,
+    sortedPemasukanKeys, sortedPengeluaranKeys
+  } = financialSummary;
   const dzuhurLabel = new Date().getDay() === 5 ? "Jumat" : "Dzuhur";
 
   return (
@@ -1028,10 +1042,10 @@ export default function MasjidDisplay() {
         </div>
       )}
 
-      {/* Premium Luxury Background Glows (Mesh Gradient Effect) */}
-      <div className="absolute top-[-20%] left-[-10%] w-[50%] h-[50%] bg-primary/30 rounded-[100%] blur-[160px] pointer-events-none z-0 animate-pulse-soft mix-blend-multiply dark:mix-blend-screen"></div>
-      <div className="absolute bottom-[-20%] right-[-10%] w-[50%] h-[50%] bg-secondary/30 rounded-[100%] blur-[160px] pointer-events-none z-0 animate-pulse-soft mix-blend-multiply dark:mix-blend-screen" style={{ animationDelay: '2s' }}></div>
-      <div className="absolute top-[20%] left-[30%] w-[40%] h-[40%] bg-accent/20 rounded-[100%] blur-[140px] pointer-events-none z-0 animate-pulse-soft mix-blend-multiply dark:mix-blend-screen" style={{ animationDelay: '1s' }}></div>
+      {/* Premium Luxury Background Glows (Zero-GPU-Blur Radial Gradient Effect for TV Stability) */}
+      <div className="absolute top-[-10%] left-[-5%] w-[45%] h-[45%] bg-[radial-gradient(circle,_var(--tw-gradient-stops))] from-primary/15 via-primary/5 to-transparent rounded-full pointer-events-none z-0"></div>
+      <div className="absolute bottom-[-10%] right-[-5%] w-[45%] h-[45%] bg-[radial-gradient(circle,_var(--tw-gradient-stops))] from-secondary/15 via-secondary/5 to-transparent rounded-full pointer-events-none z-0"></div>
+      <div className="absolute top-[25%] left-[30%] w-[35%] h-[35%] bg-[radial-gradient(circle,_var(--tw-gradient-stops))] from-accent/10 via-accent/5 to-transparent rounded-full pointer-events-none z-0"></div>
       
       {/* Decorative Calligraphy Watermark */}
       <div className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-[0.02] z-0">
@@ -1314,7 +1328,7 @@ export default function MasjidDisplay() {
                       </tr>
                     ) : (
                       keuanganFilteredTV.slice(keuanganPage * 4, (keuanganPage + 1) * 4).map((item, index) => (
-                        <tr key={item.id} className={`flex w-full items-center transition-colors flex-1 animate-fade-in ${index % 2 === 1 ? 'bg-muted/30' : 'bg-transparent'}`}>
+                        <tr key={item.id} className={`flex w-full items-center transition-colors flex-1 ${index % 2 === 1 ? 'bg-muted/30' : 'bg-transparent'}`}>
                           <td className="p-6 w-[15%] text-foreground/70 font-mono font-bold tabular-nums">{item.tanggal}</td>
                           <td className="p-6 w-[45%] font-bold text-foreground flex flex-col justify-center items-start gap-2 h-full">
                             <span className="text-xl line-clamp-1 leading-snug">{item.deskripsi}</span>
