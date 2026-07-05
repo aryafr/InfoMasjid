@@ -761,6 +761,43 @@ export default function MasjidDisplay() {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [activeSlides, settings]);
 
+  // Calculate financial sum & breakdowns (with useMemo to prevent 1s GC leaks on Android TV)
+  // Placed BEFORE conditional returns to strictly follow Rules of Hooks (prevents React error #310)
+  const financialSummary = useMemo(() => {
+    const totalPemasukan = (keuangan || []).reduce((sum, item) => sum + Number(item.pemasukan || 0), 0);
+    const totalPengeluaran = (keuangan || []).reduce((sum, item) => sum + Number(item.pengeluaran || 0), 0);
+    const saldo = totalPemasukan - totalPengeluaran;
+
+    const totalPemasukanTV = keuanganFilteredTV.reduce((sum, item) => sum + Number(item.pemasukan || 0), 0);
+    const totalPengeluaranTV = keuanganFilteredTV.reduce((sum, item) => sum + Number(item.pengeluaran || 0), 0);
+
+    const breakdownPemasukan = (keuangan || []).filter(i => i.pemasukan > 0).reduce((acc, curr) => {
+      acc[curr.kategori || "Lainnya"] = (acc[curr.kategori || "Lainnya"] || 0) + Number(curr.pemasukan);
+      return acc;
+    }, {});
+    const breakdownPengeluaran = (keuangan || []).filter(i => i.pengeluaran > 0).reduce((acc, curr) => {
+      acc[curr.kategori || "Lainnya"] = (acc[curr.kategori || "Lainnya"] || 0) + Number(curr.pengeluaran);
+      return acc;
+    }, {});
+    
+    const sortedPemasukanKeys = Object.keys(breakdownPemasukan).sort((a, b) => breakdownPemasukan[b] - breakdownPemasukan[a]).slice(0, 3);
+    const sortedPengeluaranKeys = Object.keys(breakdownPengeluaran).sort((a, b) => breakdownPengeluaran[b] - breakdownPengeluaran[a]).slice(0, 3);
+
+    return {
+      totalPemasukan, totalPengeluaran, saldo,
+      totalPemasukanTV, totalPengeluaranTV,
+      breakdownPemasukan, breakdownPengeluaran,
+      sortedPemasukanKeys, sortedPengeluaranKeys
+    };
+  }, [keuangan, keuanganFilteredTV]);
+
+  const {
+    totalPemasukan, totalPengeluaran, saldo,
+    totalPemasukanTV, totalPengeluaranTV,
+    breakdownPemasukan, breakdownPengeluaran,
+    sortedPemasukanKeys, sortedPengeluaranKeys
+  } = financialSummary;
+
   const toggleFullScreen = () => {
     if (!document.fullscreenElement) {
       document.documentElement.requestFullscreen().catch(err => {
@@ -838,42 +875,6 @@ export default function MasjidDisplay() {
   }
 
   // Remove currentSlide here since it's moved up
-
-  // Calculate financial sum & breakdowns (with useMemo to prevent 1s GC leaks on Android TV)
-  const financialSummary = useMemo(() => {
-    const totalPemasukan = (keuangan || []).reduce((sum, item) => sum + Number(item.pemasukan || 0), 0);
-    const totalPengeluaran = (keuangan || []).reduce((sum, item) => sum + Number(item.pengeluaran || 0), 0);
-    const saldo = totalPemasukan - totalPengeluaran;
-
-    const totalPemasukanTV = keuanganFilteredTV.reduce((sum, item) => sum + Number(item.pemasukan || 0), 0);
-    const totalPengeluaranTV = keuanganFilteredTV.reduce((sum, item) => sum + Number(item.pengeluaran || 0), 0);
-
-    const breakdownPemasukan = (keuangan || []).filter(i => i.pemasukan > 0).reduce((acc, curr) => {
-      acc[curr.kategori || "Lainnya"] = (acc[curr.kategori || "Lainnya"] || 0) + Number(curr.pemasukan);
-      return acc;
-    }, {});
-    const breakdownPengeluaran = (keuangan || []).filter(i => i.pengeluaran > 0).reduce((acc, curr) => {
-      acc[curr.kategori || "Lainnya"] = (acc[curr.kategori || "Lainnya"] || 0) + Number(curr.pengeluaran);
-      return acc;
-    }, {});
-    
-    const sortedPemasukanKeys = Object.keys(breakdownPemasukan).sort((a, b) => breakdownPemasukan[b] - breakdownPemasukan[a]).slice(0, 3);
-    const sortedPengeluaranKeys = Object.keys(breakdownPengeluaran).sort((a, b) => breakdownPengeluaran[b] - breakdownPengeluaran[a]).slice(0, 3);
-
-    return {
-      totalPemasukan, totalPengeluaran, saldo,
-      totalPemasukanTV, totalPengeluaranTV,
-      breakdownPemasukan, breakdownPengeluaran,
-      sortedPemasukanKeys, sortedPengeluaranKeys
-    };
-  }, [keuangan, keuanganFilteredTV]);
-
-  const {
-    totalPemasukan, totalPengeluaran, saldo,
-    totalPemasukanTV, totalPengeluaranTV,
-    breakdownPemasukan, breakdownPengeluaran,
-    sortedPemasukanKeys, sortedPengeluaranKeys
-  } = financialSummary;
   const dzuhurLabel = new Date().getDay() === 5 ? "Jumat" : "Dzuhur";
 
   return (
