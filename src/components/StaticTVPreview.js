@@ -55,7 +55,7 @@ export default function StaticTVPreview() {
 
   const idulFitri = {
     tahun: "1447 H",
-    tanggal: "Minggu, 14 Februari 2027",
+    tanggal: "Ahad, 14 Februari 2027",
     waktu: "07:00",
     khatib: "Ustadz Adi Hidayat",
     imam: "Syeikh Ali Jaber",
@@ -89,7 +89,7 @@ export default function StaticTVPreview() {
   // UI States
   const [currentSlideIndex, setCurrentSlideIndex] = useState(0);
   const [time, setTime] = useState("10:45:00");
-  const [dateStr, setDateStr] = useState("Minggu, 21 Juni 2026");
+  const [dateStr, setDateStr] = useState("Ahad, 21 Juni 2026");
   const [hijriDateStr, setHijriDateStr] = useState("6 Dzulhijjah 1447 H");
   const [countdown, setCountdown] = useState(settings.rotation_interval);
   

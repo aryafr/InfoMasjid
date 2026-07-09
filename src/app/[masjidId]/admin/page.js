@@ -20,7 +20,7 @@ import {
   Search,
   Bell,
   User,
-  LayoutDashboard, MessageSquare, CreditCard, Building,
+  LayoutDashboard, MessageSquare, CreditCard, Building, Monitor, Layout, Columns,
   Megaphone,
   TrendingUp,
   TrendingDown,
@@ -246,7 +246,8 @@ export default function AdminPage() {
     tema: "theme-emerald",
     murottal: { enabled: false, url: "" },
     posters: [],
-    keuangan_tv_filter: { type: 'weekly', customStart: '', customEnd: '' }
+    keuangan_tv_filter: { type: 'weekly', customStart: '', customEnd: '' },
+    tv_layout: 'classic'
   });
   const [jadwalForm, setJadwalForm] = useState({
     Subuh: "", Dzuhur: "", Ashar: "", Maghrib: "", Isya: ""
@@ -437,6 +438,9 @@ export default function AdminPage() {
         }
         if (!newData.keuangan_tv_filter) {
            newData.keuangan_tv_filter = { type: 'weekly', customStart: '', customEnd: '' };
+        }
+        if (!newData.tv_layout) {
+           newData.tv_layout = 'classic';
         }
         setSettingsForm(newData);
       }
@@ -1647,6 +1651,71 @@ export default function AdminPage() {
                       rows={3}
                       className="w-full bg-input/50 border border-border rounded-xl px-4 py-3 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary text-foreground transition-shadow resize-none"
                     />
+                  </div>
+
+                  <div>
+                    <label className="text-sm text-foreground font-medium mb-3 block">Pilihan Tema Layout Layar TV</label>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div 
+                        onClick={() => setSettingsForm({ ...settingsForm, tv_layout: 'classic' })}
+                        className={`cursor-pointer rounded-2xl border-2 p-5 transition-all flex flex-col justify-between ${
+                          (settingsForm.tv_layout || 'classic') === 'classic'
+                            ? 'border-primary bg-primary/10 shadow-md ring-2 ring-primary/20'
+                            : 'border-border bg-input/20 hover:border-border/80'
+                        }`}
+                      >
+                        <div>
+                          <div className="flex items-center justify-between mb-3">
+                            <div className="flex items-center gap-2 font-bold text-foreground">
+                              <Monitor className="h-5 w-5 text-primary" />
+                              <span>Klasik Penuh (Classic Full-Width)</span>
+                            </div>
+                            <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-muted text-foreground/80">Default</span>
+                          </div>
+                          <p className="text-xs text-foreground/70 leading-relaxed">
+                            Jam di kanan atas, area slide rotasi penuh 100% di tengah layar, jadwal sholat & running text di baris bawah.
+                          </p>
+                        </div>
+                        <div className="mt-4 flex items-center gap-2 text-xs font-semibold text-primary">
+                          {(settingsForm.tv_layout || 'classic') === 'classic' && (
+                            <>
+                              <CheckCircle className="h-4 w-4" />
+                              <span>Aktif Digunakan</span>
+                            </>
+                          )}
+                        </div>
+                      </div>
+
+                      <div 
+                        onClick={() => setSettingsForm({ ...settingsForm, tv_layout: 'modern-split' })}
+                        className={`cursor-pointer rounded-2xl border-2 p-5 transition-all flex flex-col justify-between ${
+                          settingsForm.tv_layout === 'modern-split'
+                            ? 'border-emerald-500 bg-emerald-500/10 shadow-md ring-2 ring-emerald-500/20'
+                            : 'border-border bg-input/20 hover:border-border/80'
+                        }`}
+                      >
+                        <div>
+                          <div className="flex items-center justify-between mb-3">
+                            <div className="flex items-center gap-2 font-bold text-foreground">
+                              <Columns className="h-5 w-5 text-emerald-500" />
+                              <span>Modern Split-Screen (Sidebar Kiri Jam Besar)</span>
+                            </div>
+                            <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-emerald-500/20 text-emerald-500">Paling Jelas</span>
+                          </div>
+                          <p className="text-xs text-foreground/70 leading-relaxed">
+                            Jam digital & hitung mundur sholat berukuran besar di kolom kiri (30%), slide rotasi di kanan (70%), jadwal sholat & running text di baris bawah.
+                          </p>
+                        </div>
+                        <div className="mt-4 flex items-center gap-2 text-xs font-semibold text-emerald-500">
+                          {settingsForm.tv_layout === 'modern-split' && (
+                            <>
+                              <CheckCircle className="h-4 w-4" />
+                              <span>Aktif Digunakan</span>
+                            </>
+                          )}
+                        </div>
+                      </div>
+                    </div>
                   </div>
 
                   <div>

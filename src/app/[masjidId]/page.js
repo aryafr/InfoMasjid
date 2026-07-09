@@ -372,7 +372,7 @@ export default function MasjidDisplay() {
       setTime(now.toLocaleTimeString("id-ID", { hour: '2-digit', minute: '2-digit', second: '2-digit', ...tzOptions }));
       
       const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', ...tzOptions };
-      setDateStr(now.toLocaleDateString("id-ID", options));
+      setDateStr(now.toLocaleDateString("id-ID", options).replace(/Minggu/gi, "Ahad"));
 
       try {
         const hijriOptions = { day: 'numeric', month: 'long', year: 'numeric', ...tzOptions };
@@ -596,6 +596,7 @@ export default function MasjidDisplay() {
       let active = (settings.rotation_pages || []).filter(p => {
         if (!p.active) return false;
         if (!isPremium && premiumPages.includes(p.url)) return false;
+        if (settings?.tv_layout === 'modern-split' && p.url === 'utama') return false;
         return true;
       });
       
@@ -770,6 +771,7 @@ export default function MasjidDisplay() {
 
     const totalPemasukanTV = keuanganFilteredTV.reduce((sum, item) => sum + Number(item.pemasukan || 0), 0);
     const totalPengeluaranTV = keuanganFilteredTV.reduce((sum, item) => sum + Number(item.pengeluaran || 0), 0);
+    const saldoTV = totalPemasukanTV - totalPengeluaranTV;
 
     const breakdownPemasukan = (keuangan || []).filter(i => i.pemasukan > 0).reduce((acc, curr) => {
       acc[curr.kategori || "Lainnya"] = (acc[curr.kategori || "Lainnya"] || 0) + Number(curr.pemasukan);
@@ -785,7 +787,7 @@ export default function MasjidDisplay() {
 
     return {
       totalPemasukan, totalPengeluaran, saldo,
-      totalPemasukanTV, totalPengeluaranTV,
+      totalPemasukanTV, totalPengeluaranTV, saldoTV,
       breakdownPemasukan, breakdownPengeluaran,
       sortedPemasukanKeys, sortedPengeluaranKeys
     };
@@ -793,7 +795,7 @@ export default function MasjidDisplay() {
 
   const {
     totalPemasukan, totalPengeluaran, saldo,
-    totalPemasukanTV, totalPengeluaranTV,
+    totalPemasukanTV, totalPengeluaranTV, saldoTV,
     breakdownPemasukan, breakdownPengeluaran,
     sortedPemasukanKeys, sortedPengeluaranKeys
   } = financialSummary;
@@ -1070,70 +1072,148 @@ export default function MasjidDisplay() {
           </div>
         </div>
 
-        {/* Global Countdown & Time */}
-        <div className="flex items-center gap-4">
-          {/* Next Prayer Countdown Widget */}
-          <div className="bg-card/60 border-2 border-border/80 px-8 py-4 rounded-3xl shadow-2xl flex items-center gap-6 shadow-primary/5 mr-2 relative shrink-0 overflow-hidden">
-            <div className="absolute left-0 inset-y-0 w-2 bg-gradient-to-b from-primary via-secondary to-primary"></div>
-            <div className="flex flex-col items-end justify-center">
-              <span className="text-sm font-black text-primary tracking-widest uppercase mb-1 whitespace-nowrap">
-                Jadwal Berikutnya
-              </span>
-              <span className="text-3xl font-black text-foreground uppercase drop-shadow-sm leading-none whitespace-nowrap">
-                {nextPrayer.name}
-              </span>
-            </div>
-            <div className="h-16 w-1 bg-border/50 rounded-full mx-2"></div>
-            <div className="flex items-center gap-4">
-              <span className={`text-5xl font-mono font-black tabular-nums tracking-tighter drop-shadow-md transition-all duration-500 ${
-                nextPrayer.secondsLeft > 0 && nextPrayer.secondsLeft <= 10
-                  ? "text-red-500 scale-110 animate-pulse"
-                  : "text-primary"
-              }`}>
-                {nextPrayer.time}
-              </span>
-              <div className={`px-5 py-2 rounded-full text-base font-black tracking-widest uppercase shadow-inner whitespace-nowrap flex items-center justify-center transition-all duration-300 ${
-                nextPrayer.secondsLeft > 0 && nextPrayer.secondsLeft <= 10
-                  ? "bg-red-600 text-white border-transparent shadow-lg scale-110 shadow-red-500/40"
-                  : nextPrayer.minutesLeft <= 10 
-                    ? "bg-destructive text-destructive-foreground border-transparent animate-pulse shadow-lg shadow-destructive/40" 
-                    : "bg-muted/80 text-foreground border-2 border-border"
-              }`}>
-                {nextPrayer.secondsLeft > 0 && nextPrayer.secondsLeft <= 10
-                  ? `${nextPrayer.secondsLeft} Dtk`
-                  : nextPrayer.minutesLeft > 60 
-                    ? `${Math.floor(nextPrayer.minutesLeft / 60)}J ${nextPrayer.minutesLeft % 60}M`
-                    : `${nextPrayer.minutesLeft} MNT`
-                }
+        {/* CENTER HEADER INFO PILL (MODERN SPLIT-SCREEN ONLY) */}
+        {settings?.tv_layout === 'modern-split' && (
+          <div className="flex-1 mx-8 hidden lg:flex items-center justify-center">
+            <div className="bg-card/70 border-2 border-border/80 px-8 py-3.5 rounded-full shadow-lg flex items-center gap-6 max-w-3xl w-full justify-between backdrop-blur-md">
+              <div className="flex items-center gap-3 text-foreground font-bold text-lg truncate">
+                <span className="w-3 h-3 rounded-full bg-primary animate-pulse shrink-0"></span>
+                <span className="truncate">{settings?.alamat_lengkap || "Selamat Datang Para Jamaah di Masjid"}</span>
+              </div>
+              <div className="h-6 w-[2px] bg-border/80 shrink-0"></div>
+              <div className="flex items-center gap-3 font-serif italic font-bold text-primary text-xl shrink-0 tracking-wide">
+                <span>بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ</span>
               </div>
             </div>
           </div>
+        )}
 
-          <div className="text-right mr-2">
-            <div className="text-xl font-black text-foreground tracking-widest uppercase flex items-center justify-end gap-2 drop-shadow-sm">
-              <Calendar className="h-6 w-6 text-primary" /> {dateStr}
-            </div>
-            {hijriDateStr && (
-              <div className="text-sm font-bold text-foreground/70 tracking-widest uppercase mt-1 drop-shadow-sm">
-                {hijriDateStr}
+        {/* Global Countdown & Time */}
+        {settings?.tv_layout === 'modern-split' ? (
+          <div className="flex items-center gap-6">
+            <div className="text-right bg-card/60 border-2 border-border/80 px-8 py-4 rounded-3xl shadow-xl">
+              <div className="text-2xl font-black text-foreground tracking-widest uppercase flex items-center justify-end gap-3 drop-shadow-sm">
+                <Calendar className="h-7 w-7 text-primary" /> {dateStr}
               </div>
-            )}
+              {hijriDateStr && (
+                <div className="text-base font-bold text-primary tracking-widest uppercase mt-1 drop-shadow-sm">
+                  {hijriDateStr}
+                </div>
+              )}
+            </div>
           </div>
-          
-          <div className="bg-card/60 border-4 border-border/80 px-10 py-5 rounded-[2.5rem] shadow-2xl flex items-center gap-6 shadow-primary/10">
-            <Clock className="h-12 w-12 text-primary animate-pulse" />
-            <span className="text-7xl font-mono font-black tracking-tighter tabular-nums text-foreground drop-shadow-lg">
-              {time}
-            </span>
+        ) : (
+          <div className="flex items-center gap-4">
+            {/* Next Prayer Countdown Widget */}
+            <div className="bg-card/60 border-2 border-border/80 px-8 py-4 rounded-3xl shadow-2xl flex items-center gap-6 shadow-primary/5 mr-2 relative shrink-0 overflow-hidden">
+              <div className="absolute left-0 inset-y-0 w-2 bg-gradient-to-b from-primary via-secondary to-primary"></div>
+              <div className="flex flex-col items-end justify-center">
+                <span className="text-sm font-black text-primary tracking-widest uppercase mb-1 whitespace-nowrap">
+                  Jadwal Berikutnya
+                </span>
+                <span className="text-3xl font-black text-foreground uppercase drop-shadow-sm leading-none whitespace-nowrap">
+                  {nextPrayer.name}
+                </span>
+              </div>
+              <div className="h-16 w-1 bg-border/50 rounded-full mx-2"></div>
+              <div className="flex items-center gap-4">
+                <span className={`text-5xl font-mono font-black tabular-nums tracking-tighter drop-shadow-md transition-all duration-500 ${
+                  nextPrayer.secondsLeft > 0 && nextPrayer.secondsLeft <= 10
+                    ? "text-red-500 scale-110 animate-pulse"
+                    : "text-primary"
+                }`}>
+                  {nextPrayer.time}
+                </span>
+                <div className={`px-5 py-2 rounded-full text-base font-black tracking-widest uppercase shadow-inner whitespace-nowrap flex items-center justify-center transition-all duration-300 ${
+                  nextPrayer.secondsLeft > 0 && nextPrayer.secondsLeft <= 10
+                    ? "bg-red-600 text-white border-transparent shadow-lg scale-110 shadow-red-500/40"
+                    : nextPrayer.minutesLeft <= 10 
+                      ? "bg-destructive text-destructive-foreground border-transparent animate-pulse shadow-lg shadow-destructive/40" 
+                      : "bg-muted/80 text-foreground border-2 border-border"
+                }`}>
+                  {nextPrayer.secondsLeft > 0 && nextPrayer.secondsLeft <= 10
+                    ? `${nextPrayer.secondsLeft} Dtk`
+                    : nextPrayer.minutesLeft > 60 
+                      ? `${Math.floor(nextPrayer.minutesLeft / 60)}J ${nextPrayer.minutesLeft % 60}M`
+                      : `${nextPrayer.minutesLeft} MNT`
+                  }
+                </div>
+              </div>
+            </div>
+
+            <div className="text-right mr-2">
+              <div className="text-xl font-black text-foreground tracking-widest uppercase flex items-center justify-end gap-2 drop-shadow-sm">
+                <Calendar className="h-6 w-6 text-primary" /> {dateStr}
+              </div>
+              {hijriDateStr && (
+                <div className="text-sm font-bold text-foreground/70 tracking-widest uppercase mt-1 drop-shadow-sm">
+                  {hijriDateStr}
+                </div>
+              )}
+            </div>
+            
+            <div className="bg-card/60 border-4 border-border/80 px-10 py-5 rounded-[2.5rem] shadow-2xl flex items-center gap-6 shadow-primary/10">
+              <Clock className="h-12 w-12 text-primary animate-pulse" />
+              <span className="text-7xl font-mono font-black tracking-tighter tabular-nums text-foreground drop-shadow-lg">
+                {time}
+              </span>
+            </div>
           </div>
-        </div>
+        )}
       </header>
 
       {/* DYNAMIC CONTENT CONTAINER */}
-      <main className="relative z-10 flex-1 flex items-stretch min-h-0 w-full">
+      <main className="relative z-10 flex-1 flex items-stretch min-h-0 w-full gap-6">
         
-        {/* FULL WIDTH ACTIVE SLIDES SHOWCASE */}
-        <div className="w-full flex flex-col items-stretch justify-center relative min-h-0 h-full">
+        {/* LEFT SIDEBAR (MODERN SPLIT-SCREEN ONLY) */}
+        {settings?.tv_layout === 'modern-split' && !isMurottalMode && (
+          <aside className="w-[30%] flex flex-col justify-between gap-4 shrink-0 h-full min-h-0 overflow-hidden">
+            {/* LARGE PERMANENT DIGITAL CLOCK CARD */}
+            <div className="bg-card/70 border-4 border-primary/30 rounded-[2rem] p-5 shadow-2xl flex flex-col items-center justify-center text-center shrink-0">
+              <span className="text-base font-black text-primary tracking-widest uppercase mb-1">WAKTU SEKARANG</span>
+              <span className="text-6xl xl:text-7xl font-mono font-black tracking-tighter tabular-nums text-foreground drop-shadow-xl my-1">
+                {time}
+              </span>
+              <div className="flex items-center gap-2 text-sm font-bold text-foreground/90 mt-1">
+                <Calendar className="h-4 w-4 text-primary" /> {dateStr}
+              </div>
+              {hijriDateStr && (
+                <div className="text-xs font-semibold text-primary tracking-wider mt-0.5">
+                  {hijriDateStr}
+                </div>
+              )}
+            </div>
+
+            {/* LARGE NEXT PRAYER COUNTDOWN CARD */}
+            <div className="bg-card/70 border-4 border-secondary/30 rounded-[2rem] p-5 shadow-2xl flex flex-col items-center justify-center text-center flex-1 min-h-0">
+              <span className="text-base font-black text-secondary tracking-widest uppercase mb-2">SHOLAT BERIKUTNYA</span>
+              <span className="text-4xl xl:text-5xl font-black text-foreground uppercase tracking-wide mb-2 drop-shadow-sm">
+                {nextPrayer.name}
+              </span>
+              <span className="text-6xl xl:text-7xl font-mono font-black tabular-nums text-primary tracking-tighter mb-4 drop-shadow-md">
+                {nextPrayer.time}
+              </span>
+              <div className={`px-6 py-3 rounded-full text-xl font-black tracking-widest uppercase shadow-lg transition-all duration-300 ${
+                nextPrayer.secondsLeft > 0 && nextPrayer.secondsLeft <= 10
+                  ? "bg-red-600 text-white animate-pulse"
+                  : nextPrayer.minutesLeft <= 10
+                    ? "bg-destructive text-destructive-foreground animate-pulse"
+                    : "bg-primary text-primary-foreground"
+              }`}>
+                MENUJU AZAN: {
+                  nextPrayer.secondsLeft > 0 && nextPrayer.secondsLeft <= 10
+                    ? `${nextPrayer.secondsLeft} DETIK`
+                    : nextPrayer.minutesLeft > 60
+                      ? `${Math.floor(nextPrayer.minutesLeft / 60)}J ${nextPrayer.minutesLeft % 60}M`
+                      : `${nextPrayer.minutesLeft} MENIT`
+                }
+              </div>
+            </div>
+          </aside>
+        )}
+
+        {/* FULL WIDTH / RIGHT COLUMN ACTIVE SLIDES SHOWCASE */}
+        <div className="flex-1 flex flex-col items-stretch justify-center relative min-h-0 h-full min-w-0">
 
           {/* Murottal Video Slide (Overrides all other slides when active) */}
           {isMurottalMode && settings?.murottal?.url ? (
@@ -1147,11 +1227,11 @@ export default function MasjidDisplay() {
           
           {/* Slide 1: Welcome/Dashboard */}
           {currentSlide.url === "welcome" && (
-            <div className="animate-fade-in flex flex-col gap-6 w-full h-full justify-between">
+            <div className="animate-fade-in flex flex-col gap-4 w-full h-full justify-between overflow-hidden">
               
               {/* Top Banner Row */}
-              <div className="grid grid-cols-3 gap-6">
-                <div className="col-span-2 bg-card/60 rounded-[2rem] p-6 border-2 border-border/60 flex flex-col justify-between shadow-xl shadow-emerald-500/30 relative overflow-hidden">
+              <div className="grid grid-cols-3 gap-5 shrink-0">
+                <div className="col-span-2 bg-card/60 rounded-[1.8rem] p-5 border-2 border-border/60 flex flex-col justify-between shadow-xl shadow-emerald-500/30 relative overflow-hidden">
                   
                   {/* Islamic Geometric Ornament Watermark */}
                   <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-primary/30 pointer-events-none"></div>
@@ -1175,40 +1255,41 @@ export default function MasjidDisplay() {
                   </div>
                 </div>
 
-                <div className="bg-card/60 rounded-[2rem] p-8 border-2 border-border/60 flex flex-col justify-between items-center text-center shadow-xl shadow-emerald-500/30">
-                  <span className="text-foreground/80 text-xl font-black tracking-widest uppercase">Jumat Terdekat</span>
-                  <div className="my-4">
-                    <p className="text-primary text-4xl font-black">{upcomingJumat?.khatib || "Loading..."}</p>
-                    <p className="text-lg text-foreground/70 font-bold mt-2 uppercase tracking-wide">Khatib & Imam</p>
+                <div className="bg-card/60 rounded-[1.8rem] p-5 border-2 border-border/60 flex flex-col justify-between items-center text-center shadow-xl shadow-emerald-500/30">
+                  <span className="text-foreground/80 text-lg font-black tracking-widest uppercase">Jumat Terdekat</span>
+                  <div className="my-2">
+                    <p className="text-primary text-3xl font-black">{upcomingJumat?.khatib || "Loading..."}</p>
+                    <p className="text-base text-foreground/70 font-bold mt-1 uppercase tracking-wide">Khatib & Imam</p>
                   </div>
-                  <div className="bg-muted/80 px-6 py-3 rounded-2xl border-2 border-border text-lg text-foreground font-bold tabular-nums">
-                    {upcomingJumat?.tanggal ? new Date(upcomingJumat.tanggal).toLocaleDateString("id-ID", { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }) : "Loading..."}
+                  <div className="bg-muted/80 px-5 py-2 rounded-xl border-2 border-border text-base text-foreground font-bold tabular-nums">
+                    {upcomingJumat?.tanggal ? new Date(upcomingJumat.tanggal).toLocaleDateString("id-ID", { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }).replace(/Minggu/gi, "Ahad") : "Loading..."}
                   </div>
                 </div>
               </div>
 
               {/* Bottom Row - Table of prayers + Announcements */}
-              <div className="grid grid-cols-2 gap-6 flex-1 mt-4 min-h-0">
+              <div className={`grid gap-5 flex-1 mt-1 min-h-0 overflow-hidden ${settings?.tv_layout === 'modern-split' ? 'grid-cols-1' : 'grid-cols-2'}`}>
                 
-                {/* Mini Prayer List */}
-                <div className="bg-card/60 rounded-[2rem] p-6 border-2 border-border/60 shadow-xl shadow-emerald-500/30 flex flex-col h-full overflow-hidden">
-                  <h3 className="text-primary text-xl font-black flex items-center gap-3 mb-3 border-b-2 border-border/50 pb-2 uppercase tracking-wider shrink-0">
-                    <Clock className="h-6 w-6" /> Waktu Sholat
-                  </h3>
-                  <div className="flex flex-col gap-2">
+                {/* Mini Prayer List (Only displayed in Classic Layout) */}
+                {settings?.tv_layout !== 'modern-split' && (
+                  <div className="bg-card/60 rounded-[1.8rem] p-5 border-2 border-border/60 shadow-xl shadow-emerald-500/30 flex flex-col h-full min-h-0 overflow-hidden">
+                    <h3 className="text-primary text-lg font-black flex items-center gap-2 mb-2 border-b-2 border-border/50 pb-1.5 uppercase tracking-wider shrink-0">
+                      <Clock className="h-5 w-5" /> Waktu Sholat
+                    </h3>
+                  <div className="flex flex-col gap-1.5 justify-between flex-1 min-h-0">
                     {["Imsak", "Subuh", "Terbit", dzuhurLabel, "Ashar", "Maghrib", "Isya"].map((name) => {
                       const timeKey = name === "Jumat" ? "Dzuhur" : name;
                       return (
                       <div 
                         key={name} 
-                        className={`flex items-center justify-between px-5 py-3 rounded-2xl transition-all border-2 ${
+                        className={`flex items-center justify-between px-4 py-1.5 rounded-xl transition-all border ${
                           nextPrayer.name === name 
-                            ? "bg-gradient-to-r from-primary to-primary/90 text-primary-foreground border-primary shadow-2xl shadow-primary/30 scale-[1.02]" 
+                            ? "bg-gradient-to-r from-primary to-primary/90 text-primary-foreground border-primary shadow-lg scale-[1.01]" 
                             : "bg-muted/40 border-transparent text-foreground"
                         }`}
                       >
-                        <span className="text-xl font-bold tracking-wide uppercase">{name}</span>
-                        <span className="text-3xl font-mono font-black tabular-nums tracking-tighter">
+                        <span className="text-lg font-black tracking-wide uppercase">{name}</span>
+                        <span className="text-2xl font-mono font-black tabular-nums tracking-tight">
                           {jadwal[timeKey]}
                         </span>
                       </div>
@@ -1216,26 +1297,27 @@ export default function MasjidDisplay() {
                     })}
                   </div>
                 </div>
+                )}
 
                 {/* Announcements Box */}
-                <div className="bg-card/60 rounded-[2rem] p-6 border-2 border-border/60 shadow-xl shadow-emerald-500/30 flex flex-col h-full overflow-hidden">
-                  <h3 className="text-primary text-xl font-black flex items-center gap-3 mb-3 border-b-2 border-border/50 pb-2 uppercase tracking-wider shrink-0">
-                    <Volume2 className="h-6 w-6" /> Pengumuman Utama
+                <div className="bg-card/60 rounded-[1.8rem] p-5 border-2 border-border/60 shadow-xl shadow-emerald-500/30 flex flex-col h-full min-h-0 overflow-hidden">
+                  <h3 className="text-primary text-lg font-black flex items-center gap-2 mb-2 border-b-2 border-border/50 pb-1.5 uppercase tracking-wider shrink-0">
+                    <Volume2 className="h-5 w-5" /> Pengumuman Utama
                   </h3>
-                  <div className="flex flex-col gap-3 overflow-hidden flex-1 justify-start">
+                  <div className="flex flex-col gap-2.5 overflow-hidden flex-1 justify-start">
                     {pengumuman && pengumuman.length > 0 ? (
-                      pengumuman.slice(0, 3).map((item) => (
-                        <div key={item.id} className="bg-muted/40 p-3 rounded-2xl border-l-[6px] border-primary flex items-start gap-4 shadow-sm">
-                          <div className="bg-background border-2 border-border/80 h-12 w-12 flex items-center justify-center rounded-2xl text-primary shrink-0 text-base font-black font-mono shadow-sm mt-0.5">
+                      pengumuman.slice(0, settings?.tv_layout === 'modern-split' ? 3 : 2).map((item) => (
+                        <div key={item.id} className="bg-muted/40 px-5 py-3.5 rounded-2xl border-l-[6px] border-primary flex items-start gap-4 shadow-sm w-full min-w-0">
+                          <div className="bg-background border border-border/80 h-11 w-11 flex items-center justify-center rounded-xl text-primary shrink-0 text-base font-black font-mono shadow-sm mt-0.5">
                             {item.tanggal ? item.tanggal.substring(8,10) : <Megaphone className="h-5 w-5" />}
                           </div>
-                          <p className="text-base text-foreground leading-snug font-semibold whitespace-pre-wrap">{item.isi}</p>
+                          <p className="flex-1 min-w-0 pr-2 text-lg text-foreground leading-snug font-bold break-words line-clamp-2">{item.isi}</p>
                         </div>
                       ))
                     ) : (
                       <div className="flex-1 flex flex-col items-center justify-center p-6 text-center">
                         <Quote className="h-12 w-12 text-primary/30 mb-4" />
-                        <p className="text-xl text-foreground/80 font-serif italic leading-relaxed">
+                        <p className="text-2xl text-foreground/90 font-serif italic font-semibold leading-relaxed">
                           {FALLBACK_QUOTES[new Date().getDay() % FALLBACK_QUOTES.length]}
                         </p>
                       </div>
@@ -1375,9 +1457,16 @@ export default function MasjidDisplay() {
                   </span>
                   <span className="text-4xl font-black font-mono text-destructive tabular-nums tracking-tighter">Rp {totalPengeluaranTV.toLocaleString("id-ID")}</span>
                 </div>
-                <div className="bg-secondary/20 border-2 border-secondary/30 rounded-3xl px-8 py-6 flex flex-col items-start justify-center gap-2 shadow-lg">
-                  <span className="text-lg text-foreground font-black uppercase tracking-widest">Saldo Kas Bersih Keseluruhan</span>
-                  <span className="text-4xl font-black font-mono text-foreground tabular-nums tracking-tighter">Rp {saldo.toLocaleString("id-ID")}</span>
+                <div className="bg-secondary/20 border-2 border-secondary/30 rounded-3xl px-7 py-5 flex flex-col items-start justify-center gap-1.5 shadow-lg">
+                  <span className="text-base text-foreground font-black uppercase tracking-widest">
+                    Surplus / Defisit ({settings?.keuangan_tv_filter?.type === 'custom' ? 'Periode Ini' : settings?.keuangan_tv_filter?.type === 'monthly' ? 'Bulan Ini' : 'Minggu Ini'})
+                  </span>
+                  <span className={`text-4xl font-black font-mono tabular-nums tracking-tighter ${saldoTV >= 0 ? "text-primary" : "text-destructive"}`}>
+                    {saldoTV >= 0 ? "+Rp " : "-Rp "}{Math.abs(saldoTV).toLocaleString("id-ID")}
+                  </span>
+                  <div className="text-xs font-bold text-foreground/80 bg-background/80 px-3 py-1 rounded-full border border-border mt-1">
+                    Saldo Kas Akhir Masjid: Rp {saldo.toLocaleString("id-ID")}
+                  </div>
                 </div>
               </div>
             </div>
@@ -1393,7 +1482,7 @@ export default function MasjidDisplay() {
 
               <div className="bg-card/60 border-2 border-border/60 p-10 rounded-[3rem] w-full flex flex-col gap-8 shadow-2xl shadow-emerald-500/30 relative overflow-hidden">
                 <div className="absolute top-0 right-0 bg-primary text-primary-foreground font-black px-8 py-3 rounded-tr-[3rem] rounded-bl-[2.5rem] text-2xl font-mono shadow-xl">
-                  {upcomingJumat?.tanggal ? new Date(upcomingJumat.tanggal).toLocaleDateString("id-ID", { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }) : "Segera Hadir"}
+                  {upcomingJumat?.tanggal ? new Date(upcomingJumat.tanggal).toLocaleDateString("id-ID", { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }).replace(/Minggu/gi, "Ahad") : "Segera Hadir"}
                 </div>
                 
                 <div className="flex items-center gap-8 border-b-2 border-border/50 pb-6 mt-4">
@@ -1460,7 +1549,7 @@ export default function MasjidDisplay() {
                       </p>
                       <div className="text-primary font-black mt-4 font-mono uppercase tracking-widest text-lg flex items-center gap-2">
                         <span className="w-2 h-2 rounded-full bg-primary animate-pulse"></span>
-                        {item.tanggal ? new Date(item.tanggal).toLocaleDateString("id-ID", { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }) : ""}
+                        {item.tanggal ? new Date(item.tanggal).toLocaleDateString("id-ID", { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }).replace(/Minggu/gi, "Ahad") : ""}
                       </div>
                     </div>
                   </div>
@@ -1773,6 +1862,36 @@ export default function MasjidDisplay() {
 
         </div>
       </main>
+
+      {/* MODERN SPLIT-SCREEN BOTTOM PRAYER STRIP */}
+      {settings?.tv_layout === 'modern-split' && jadwal && (
+        <section className={`relative z-10 grid gap-3 my-3 shrink-0 ${jadwal.Dhuha ? 'grid-cols-8' : 'grid-cols-7'}`}>
+          {(jadwal.Dhuha 
+            ? ["Imsak", "Subuh", "Terbit", "Dhuha", dzuhurLabel, "Ashar", "Maghrib", "Isya"]
+            : ["Imsak", "Subuh", "Terbit", dzuhurLabel, "Ashar", "Maghrib", "Isya"]
+          ).map((name) => {
+            const timeKey = name === "Jumat" ? "Dzuhur" : name;
+            const isNext = nextPrayer.name === name || (name === "Jumat" && nextPrayer.name === "Dzuhur");
+            return (
+              <div 
+                key={name}
+                className={`rounded-2xl px-3 py-3 flex flex-col items-center justify-center border-2 transition-all shadow-lg ${
+                  isNext
+                    ? "bg-primary text-primary-foreground border-primary scale-105 shadow-primary/30 ring-2 ring-primary/40"
+                    : "bg-card/80 text-foreground border-border/80"
+                }`}
+              >
+                <span className={`text-sm xl:text-base font-black uppercase tracking-widest ${isNext ? "text-primary-foreground" : "text-foreground/80"}`}>
+                  {name}
+                </span>
+                <span className="text-3xl xl:text-4xl font-mono font-black tracking-tight tabular-nums mt-1">
+                  {jadwal[timeKey] || "-"}
+                </span>
+              </div>
+            );
+          })}
+        </section>
+      )}
 
       {/* FOOTER SECTION: RUNNING TEXT MARQUEE */}
       <footer className="relative z-10 mt-6 border-t-4 border-primary/20 bg-primary/10 flex items-stretch h-20 shadow-2xl shrink-0 -mx-6 -mb-6">
