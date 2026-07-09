@@ -187,7 +187,7 @@ export function subscribeToKeuangan(masjidId, callback) {
     };
   }
 
-  const q = query(collection(db, 'masjids', masjidId, 'keuangan'), orderBy('tanggal', 'desc'), limit(20));
+  const q = query(collection(db, 'masjids', masjidId, 'keuangan'), orderBy('tanggal', 'desc'));
   try {
     return onSnapshot(q, (snapshot) => {
       const list = [];
