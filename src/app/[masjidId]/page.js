@@ -596,7 +596,6 @@ export default function MasjidDisplay() {
       let active = (settings.rotation_pages || []).filter(p => {
         if (!p.active) return false;
         if (!isPremium && premiumPages.includes(p.url)) return false;
-        if (settings?.tv_layout === 'modern-split' && p.url === 'utama') return false;
         return true;
       });
       
@@ -616,7 +615,7 @@ export default function MasjidDisplay() {
       }
       
       setActiveSlides(active);
-      setCountdown(settings.rotation_interval || 12);
+      setCountdown((prev) => (prev === 10 || prev > (settings.rotation_interval || 12)) ? (settings.rotation_interval || 12) : prev);
     }
   }, [settings, masjidRoot, masjidId]);
 
@@ -651,22 +650,55 @@ export default function MasjidDisplay() {
     }).sort((a, b) => new Date(b.tanggal) - new Date(a.tanggal));
   }, [keuangan, settings?.keuangan_tv_filter]);
 
+  const rotationStateRef = useRef({
+    activeSlides,
+    currentSlideIndex,
+    pengumumanPage,
+    keuanganPage,
+    pengumuman,
+    keuanganFilteredTV,
+    rotationInterval: settings?.rotation_interval || 12,
+  });
+
+  useEffect(() => {
+    rotationStateRef.current = {
+      activeSlides,
+      currentSlideIndex,
+      pengumumanPage,
+      keuanganPage,
+      pengumuman,
+      keuanganFilteredTV,
+      rotationInterval: settings?.rotation_interval || 12,
+    };
+  });
+
   // 4. Unified Slide & Pagination Rotation Logic
   useEffect(() => {
-    if (!settings || !settings.rotation_enabled || activeSlides.length === 0) return;
+    if (!settings || !settings.rotation_enabled) return;
 
     const timer = setInterval(() => {
       setCountdown((prev) => {
+        const {
+          activeSlides: slides,
+          currentSlideIndex: idx,
+          pengumumanPage: pPage,
+          keuanganPage: kPage,
+          pengumuman: pengList,
+          keuanganFilteredTV: kList,
+          rotationInterval
+        } = rotationStateRef.current;
+
+        if (!slides || slides.length === 0) return rotationInterval;
+
         if (prev <= 1) {
-          const currentSlideObj = activeSlides[currentSlideIndex];
-          const rotationInterval = settings.rotation_interval || 12;
-          
+          const currentSlideObj = slides[idx];
+
           // Check Pengumuman pagination
           if (currentSlideObj?.url === "pengumuman") {
-            const totalPages = Math.ceil((pengumuman || []).length / 2);
+            const totalPages = Math.ceil((pengList || []).length / 2);
             if (totalPages > 1) {
-              if (pengumumanPage < totalPages - 1) {
-                setPengumumanPage(pengumumanPage + 1);
+              if (pPage < totalPages - 1) {
+                setPengumumanPage(pPage + 1);
                 return rotationInterval;
               } else {
                 setPengumumanPage(0);
@@ -676,11 +708,10 @@ export default function MasjidDisplay() {
 
           // Check Keuangan pagination
           if (currentSlideObj?.url === "keuangan") {
-             const totalPages = Math.ceil(keuanganFilteredTV.length / 4);
-             
+             const totalPages = Math.ceil((kList || []).length / 4);
              if (totalPages > 1) {
-               if (keuanganPage < totalPages - 1) {
-                 setKeuanganPage(keuanganPage + 1);
+               if (kPage < totalPages - 1) {
+                 setKeuanganPage(kPage + 1);
                  return rotationInterval;
                } else {
                  setKeuanganPage(0);
@@ -690,8 +721,8 @@ export default function MasjidDisplay() {
 
           // Advance to next slide if not blocked by pagination
           // Only advance if there's more than 1 slide
-          if (activeSlides.length > 1) {
-            setCurrentSlideIndex((curr) => (curr + 1) % activeSlides.length);
+          if (slides.length > 1) {
+            setCurrentSlideIndex((curr) => (curr + 1) % slides.length);
           }
           return rotationInterval;
         }
@@ -700,7 +731,7 @@ export default function MasjidDisplay() {
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [settings, activeSlides, currentSlideIndex, pengumumanPage, keuanganPage, pengumuman, keuangan]);
+  }, [settings?.rotation_enabled]);
 
   // 5. Zero-Setup API Auto-Update
   useEffect(() => {
@@ -1457,16 +1488,9 @@ export default function MasjidDisplay() {
                   </span>
                   <span className="text-4xl font-black font-mono text-destructive tabular-nums tracking-tighter">Rp {totalPengeluaranTV.toLocaleString("id-ID")}</span>
                 </div>
-                <div className="bg-secondary/20 border-2 border-secondary/30 rounded-3xl px-7 py-5 flex flex-col items-start justify-center gap-1.5 shadow-lg">
-                  <span className="text-base text-foreground font-black uppercase tracking-widest">
-                    Surplus / Defisit ({settings?.keuangan_tv_filter?.type === 'custom' ? 'Periode Ini' : settings?.keuangan_tv_filter?.type === 'monthly' ? 'Bulan Ini' : 'Minggu Ini'})
-                  </span>
-                  <span className={`text-4xl font-black font-mono tabular-nums tracking-tighter ${saldoTV >= 0 ? "text-primary" : "text-destructive"}`}>
-                    {saldoTV >= 0 ? "+Rp " : "-Rp "}{Math.abs(saldoTV).toLocaleString("id-ID")}
-                  </span>
-                  <div className="text-xs font-bold text-foreground/80 bg-background/80 px-3 py-1 rounded-full border border-border mt-1">
-                    Saldo Kas Akhir Masjid: Rp {saldo.toLocaleString("id-ID")}
-                  </div>
+                <div className="bg-secondary/20 border-2 border-secondary/30 rounded-3xl px-8 py-6 flex flex-col items-start justify-center gap-2 shadow-lg">
+                  <span className="text-lg text-foreground font-black uppercase tracking-widest">Saldo Kas Bersih Keseluruhan</span>
+                  <span className="text-4xl font-black font-mono text-foreground tabular-nums tracking-tighter">Rp {saldo.toLocaleString("id-ID")}</span>
                 </div>
               </div>
             </div>
