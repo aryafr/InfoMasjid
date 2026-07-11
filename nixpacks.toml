@@ -1,5 +1,8 @@
+[phases.setup]
+nixPkgs = ['nodejs_20']
+
 [phases.install]
-cmds = ['npm install --no-audit --no-fund --maxsockets=1']
+cmds = ['npm install --no-audit --no-fund']
 
 [phases.build]
-cmds = ['NODE_OPTIONS="--max-old-space-size=1024" npm run build']
+cmds = ['NODE_OPTIONS="--max-old-space-size=2048" npm run build']
