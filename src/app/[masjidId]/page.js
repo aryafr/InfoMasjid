@@ -376,7 +376,24 @@ export default function MasjidDisplay() {
 
       try {
         const hijriOptions = { day: 'numeric', month: 'long', year: 'numeric', ...tzOptions };
-        setHijriDateStr(new Intl.DateTimeFormat('id-TN-u-ca-islamic', hijriOptions).format(now));
+        let resHijri = new Intl.DateTimeFormat('id-ID-u-ca-islamic-umalqura', hijriOptions).format(now);
+        resHijri = resHijri.replace(/\bSM\b/g, 'H').replace(/Sebelum Masehi/gi, 'H');
+
+        const gregorianMonths = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
+        if (gregorianMonths.some(m => resHijri.includes(m))) {
+          const hijriMonthsIndo = [
+            "Muharram", "Safar", "Rabiul Awal", "Rabiul Akhir",
+            "Jumadil Awal", "Jumadil Akhir", "Rajab", "Sya'ban",
+            "Ramadhan", "Syawal", "Dzulqa'dah", "Dzulhijjah"
+          ];
+          const parts = new Intl.DateTimeFormat('en-US-u-ca-islamic-umalqura', { day: 'numeric', month: 'numeric', year: 'numeric', ...tzOptions }).formatToParts(now);
+          const day = parts.find(p => p.type === 'day')?.value || '';
+          const monthNum = parseInt(parts.find(p => p.type === 'month')?.value || '1', 10);
+          const year = parts.find(p => p.type === 'year')?.value || '';
+          const monthName = hijriMonthsIndo[(monthNum - 1) % 12] || "";
+          resHijri = `${day} ${monthName} ${year} H`.trim();
+        }
+        setHijriDateStr(resHijri);
       } catch (e) {
         setHijriDateStr("");
       }
